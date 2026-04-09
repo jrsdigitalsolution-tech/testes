@@ -75,7 +75,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           <div style="text-align:center; padding: 30px;">
             <i class="bi bi-file-earmark-x text-danger d-block mb-3" style="font-size: 3.5rem;"></i>
             <h4 class="text-danger fw-bold">ARQUIVO DO MOTOR NÃO ENCONTRADO</h4>
-            <p class="text-muted mt-2">O navegador tentou ligar o motor local, mas o arquivo não foi carregado.</p>
+            <p class="text-muted mt-2">O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.</p>
           </div>
         `;
         document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
@@ -512,7 +512,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     modalResumoUI.show();
   }
 
-  // ==== MOTOR DE RENDERIZAÇÃO INTELIGENTE (PC vs MOBILE APP) ====
+  // ==== MOTOR DE RENDERIZAÇÃO HÍBRIDO (PC VS MOBILE APP) ====
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
@@ -532,24 +532,14 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     let maiorAtraso = { texto: "-", valor: 0 };
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
-    if (viewport) {
-      if (isMobileView) {
-        viewport.classList.remove('bg-white', 'border', 'shadow-sm');
-        viewport.classList.add('bg-transparent', 'border-0', 'shadow-none', 'px-3');
-      } else {
-        viewport.classList.add('bg-white', 'border', 'shadow-sm');
-        viewport.classList.remove('bg-transparent', 'border-0', 'shadow-none', 'px-3');
-      }
-    }
-
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO MOBILE (CARDS) ====
+      // ==== RENDERIZAÇÃO NATIVA MOBILE (CARDS, 100% RESPONSIVO) ====
       head.innerHTML = `
-        <tr class="bg-transparent border-0">
-          <td colspan="100%" class="p-0 pb-3 border-0 bg-transparent">
-            <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200">
-              <span class="text-[0.7rem] font-bold text-slate-500 uppercase tracking-wider"><i class="bi bi-funnel me-1"></i> Ordenar</span>
-              <select class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary" onchange="if(this.value) { toggleOrdenacao(this.value); this.value=''; }">
+        <tr class="block w-full mb-3 bg-transparent border-0">
+          <td class="block w-full p-0 bg-transparent border-0">
+            <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 w-full box-border">
+              <span class="text-[0.7rem] font-bold text-slate-500 uppercase tracking-wider shrink-0"><i class="bi bi-funnel me-1"></i> Ordenar</span>
+              <select class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary w-[60%]" onchange="if(this.value) { toggleOrdenacao(this.value); this.value=''; }">
                 <option value="" disabled selected>Selecione...</option>
                 <option value="obra">Obra (A-Z)</option>
                 <option value="valor">Maior Valor</option>
@@ -578,40 +568,46 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
         else statusBadgeClass += "bg-light text-secondary";
 
-        html += `<tr class="bg-transparent border-0">`;
-        html += `<td colspan="100%" class="p-0 pb-3 border-0 bg-transparent">`;
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col relative active:scale-[0.98] transition-transform cursor-pointer">`;
+        html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
+        html += `<td class="block w-full p-0 bg-transparent border-0">`;
+        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border">`;
         
-        html += `<div class="flex justify-between items-start mb-3">`;
-        html += `<span class="font-black text-slate-800 text-lg tracking-tight leading-none"><i class="bi bi-building me-1 text-slate-400 text-base"></i> ${r[COLS.OBRA] || "-"}</span>`;
+        // Linha Superior
+        html += `<div class="flex justify-between items-start w-full gap-2">`;
+        html += `<div class="flex items-center gap-2 min-w-0">`; 
+        html += `<div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center shrink-0 border border-slate-100"><i class="bi bi-building"></i></div>`;
+        html += `<span class="font-black text-slate-800 text-lg tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `</div>`;
         if (isGeralView) {
-            html += `<span class="${statusBadgeClass} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider">${stProp || "-"}</span>`;
+            html += `<span class="${statusBadgeClass} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0">${stProp || "-"}</span>`;
         } else {
-            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider">${res.texto}</span>`;
+            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0">${res.texto}</span>`;
         }
         html += `</div>`;
 
-        html += `<div class="flex flex-col gap-1.5 mb-4">`;
-        html += `<span class="text-slate-700 text-sm font-bold truncate pr-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `<span class="text-slate-500 text-xs truncate pr-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        // Linha do Meio (Detalhes)
+        html += `<div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1.5">`;
+        html += `<span class="text-slate-700 text-sm font-bold leading-snug line-clamp-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `<span class="text-slate-500 text-xs leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
         html += `</div>`;
 
-        html += `<div class="flex justify-between items-end pt-3 border-t border-slate-100">`;
-        html += `<div class="flex flex-col gap-0.5">`;
-        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Valor Total</span>`;
-        html += `<span class="font-black text-primary text-[0.95rem]">R$ ${formatMoneyBR(val)}</span>`;
+        // Linha Inferior (Valores)
+        html += `<div class="flex justify-between items-end w-full mt-1">`;
+        html += `<div class="flex flex-col">`;
+        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Valor Total</span>`;
+        html += `<span class="font-black text-primary text-[1.05rem] leading-none">R$ ${formatMoneyBR(val)}</span>`;
         html += `</div>`;
 
         if (!isGeralView) {
-            html += `<div class="flex flex-col items-end gap-1">`;
-            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Compras</span>`;
-            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-2 py-0.5 rounded font-black">${resCompras.texto}</span>`;
+            html += `<div class="flex flex-col items-end">`;
+            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
+            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-2 py-0.5 rounded font-black m-0 shrink-0">${resCompras.texto}</span>`;
             html += `</div>`;
         } else {
-            html += `<div class="flex flex-col items-end gap-0.5">`;
-            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Prazo</span>`;
+            html += `<div class="flex flex-col items-end">`;
+            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
             const prazoEx = isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-");
-            html += `<span class="text-slate-700 text-sm font-bold">${prazoEx}</span>`;
+            html += `<span class="text-slate-700 text-sm font-bold leading-none">${prazoEx}</span>`;
             html += `</div>`;
         }
         html += `</div>`; 
@@ -621,7 +617,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       });
 
     } else {
-      // ==== RENDERIZAÇÃO PC (TABELA) ====
+      // ==== RENDERIZAÇÃO PC (TABELA HORIZONTAL TRADICIONAL) ====
       if (!isGeralView) {
         const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
         head.innerHTML = "<tr>" + labs.map(l => {
@@ -1552,19 +1548,29 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const viewport = document.querySelector('.table-viewport');
     if (!viewport) return;
 
-    const viewportTop = viewport.getBoundingClientRect().top;
-    const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const margemInferior = window.innerWidth <= 768 ? 20 : 40; 
-    const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
+    if (window.innerWidth <= 768) {
+      // Telemóvel: Eliminar o scroll interno e deixar a página rolar naturalmente
+      viewport.style.maxHeight = 'none';
+      viewport.style.overflow = 'visible';
+      viewport.classList.remove('table-scroll-locked');
+    } else {
+      // Computador: Manter a área de rolagem isolada
+      const viewportTop = viewport.getBoundingClientRect().top;
+      const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const margemInferior = 40; 
+      const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
 
-    viewport.style.maxHeight = `${alturaDisponivel}px`;
-    viewport.classList.add('table-scroll-locked');
+      viewport.style.maxHeight = `${alturaDisponivel}px`;
+      viewport.style.overflow = 'auto';
+      viewport.classList.add('table-scroll-locked');
+    }
   }
 
   window.addEventListener('resize', () => {
     const isMobileView = window.innerWidth <= 768;
     const estavaMobile = viewportIsMobile;
     
+    // Recarrega a tabela se transitar de PC para Mobile
     if (isMobileView !== estavaMobile) {
       viewportIsMobile = isMobileView;
       if (dadosLocais.length > 0) renderizar(dadosLocais.slice(1));
