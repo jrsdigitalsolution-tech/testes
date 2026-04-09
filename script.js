@@ -538,8 +538,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         <tr class="block w-full mb-3 bg-transparent border-0">
           <td class="block w-full p-0 bg-transparent border-0">
             <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 w-full box-border">
-              <span class="text-[0.7rem] font-bold text-slate-500 uppercase tracking-wider shrink-0"><i class="bi bi-funnel me-1"></i> Ordenar</span>
-              <select class="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary w-[60%]" onchange="if(this.value) { toggleOrdenacao(this.value); this.value=''; }">
+              <span class="text-[0.75rem] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5"><i class="bi bi-funnel"></i> Ordenar</span>
+              <select class="bg-slate-50 border border-slate-200 text-slate-700 text-[0.8rem] font-bold rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary w-full max-w-[180px]" onchange="if(this.value) { toggleOrdenacao(this.value); this.value=''; }">
                 <option value="" disabled selected>Selecione...</option>
                 <option value="obra">Obra (A-Z)</option>
                 <option value="valor">Maior Valor</option>
@@ -570,44 +570,45 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
         html += `<td class="block w-full p-0 bg-transparent border-0">`;
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border">`;
+        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
         
         // Linha Superior
-        html += `<div class="flex justify-between items-start w-full gap-2">`;
-        html += `<div class="flex items-center gap-2 min-w-0">`; 
+        html += `<div class="flex justify-between items-start w-full gap-3">`;
+        html += `<div class="flex items-center gap-2 min-w-0" style="flex: 1;">`; 
         html += `<div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center shrink-0 border border-slate-100"><i class="bi bi-building"></i></div>`;
         html += `<span class="font-black text-slate-800 text-lg tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
         html += `</div>`;
+        
         if (isGeralView) {
-            html += `<span class="${statusBadgeClass} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0">${stProp || "-"}</span>`;
+            html += `<span class="${statusBadgeClass} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0 max-w-[100px] truncate text-center">${stProp || "-"}</span>`;
         } else {
-            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0">${res.texto}</span>`;
+            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0 max-w-[100px] truncate text-center">${res.texto}</span>`;
         }
         html += `</div>`;
 
         // Linha do Meio (Detalhes)
-        html += `<div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1.5">`;
-        html += `<span class="text-slate-700 text-sm font-bold leading-snug line-clamp-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `<span class="text-slate-500 text-xs leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        html += `<div class="flex flex-col w-full bg-slate-50 p-3 rounded-lg border border-slate-100 gap-1.5 overflow-hidden">`;
+        html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-snug line-clamp-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `<span class="text-slate-500 text-[0.75rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
         html += `</div>`;
 
         // Linha Inferior (Valores)
-        html += `<div class="flex justify-between items-end w-full mt-1">`;
-        html += `<div class="flex flex-col">`;
-        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Valor Total</span>`;
-        html += `<span class="font-black text-primary text-[1.05rem] leading-none">R$ ${formatMoneyBR(val)}</span>`;
+        html += `<div class="flex justify-between items-end w-full mt-1 gap-2">`;
+        html += `<div class="flex flex-col min-w-0" style="flex: 1;">`;
+        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5 truncate">Valor Total</span>`;
+        html += `<span class="font-black text-primary text-[1.05rem] leading-none truncate">R$ ${formatMoneyBR(val)}</span>`;
         html += `</div>`;
 
         if (!isGeralView) {
-            html += `<div class="flex flex-col items-end">`;
+            html += `<div class="flex flex-col items-end shrink-0">`;
             html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
-            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-2 py-0.5 rounded font-black m-0 shrink-0">${resCompras.texto}</span>`;
+            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-2 py-0.5 rounded font-black m-0 shrink-0 text-center">${resCompras.texto}</span>`;
             html += `</div>`;
         } else {
-            html += `<div class="flex flex-col items-end">`;
+            html += `<div class="flex flex-col items-end shrink-0">`;
             html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
             const prazoEx = isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-");
-            html += `<span class="text-slate-700 text-sm font-bold leading-none">${prazoEx}</span>`;
+            html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-none">${prazoEx}</span>`;
             html += `</div>`;
         }
         html += `</div>`; 
@@ -1549,12 +1550,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (!viewport) return;
 
     if (window.innerWidth <= 768) {
-      // Telemóvel: Eliminar o scroll interno e deixar a página rolar naturalmente
       viewport.style.maxHeight = 'none';
       viewport.style.overflow = 'visible';
       viewport.classList.remove('table-scroll-locked');
     } else {
-      // Computador: Manter a área de rolagem isolada
       const viewportTop = viewport.getBoundingClientRect().top;
       const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       const margemInferior = 40; 
@@ -1570,7 +1569,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const isMobileView = window.innerWidth <= 768;
     const estavaMobile = viewportIsMobile;
     
-    // Recarrega a tabela se transitar de PC para Mobile
     if (isMobileView !== estavaMobile) {
       viewportIsMobile = isMobileView;
       if (dadosLocais.length > 0) renderizar(dadosLocais.slice(1));
