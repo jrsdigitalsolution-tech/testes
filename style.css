@@ -159,7 +159,6 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 .table td.td-read-left .text-truncate { text-align: left !important; }
 .table-hover tbody tr:hover td { background-color: #f1f7ff; cursor: pointer; }
 
-
 /* --- BADGES DE STATUS --- */
 .days-badge { font-weight: 800; font-size: 0.7rem; border-radius: 4px; padding: 2px 8px; display: inline-block; min-width: 110px; text-transform: uppercase; text-align: center; }
 .days-urgent { background: #fee2e2; color: #ef4444; } 
@@ -169,7 +168,6 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 
 .status-pill { font-weight: 800; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .st-ok { color: #10b981; } .st-na { color: #94a3b8; } .st-dt { color: #f59e0b; } .st-qm { color: #dc2626; }
-
 
 /* --- MODAIS & INTERATIVOS --- */
 .material-box { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column; }
@@ -203,12 +201,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; margin: 0; padding: 0; opacity: 0; cursor: pointer; background: transparent; color: transparent;
 }
 
-
 /* --- DESKTOP / PC --- */
 @media (min-width: 993px) { .modal-xl { max-width: 96vw; margin: 0.75rem auto; } }
 @media (min-width: 1400px) { .modal-xl { max-width: 1320px; } }
 @media (min-width: 1600px) { .modal-xl { max-width: 1540px; } }
-
 
 /* =========================================================
    --- APP NATIVA: RESPONSIVIDADE TOTAL (TABLET & MOBILE) ---
@@ -234,7 +230,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   /* Filtros e Estatísticas */
   .stat-grid { padding: 10px 14px; gap: 10px; }
   .filter-wrapper-header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 12px; padding: 0 14px; }
-  .table-scroll-label { display: none; } /* Oculto, mobile usa Cards verticais */
+  .table-scroll-label { display: none; }
   
   /* DESTRUIÇÃO DA TABELA: Comportamento de Lista de Cards */
   .table-viewport { 
@@ -242,17 +238,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     background: transparent !important; 
     border: none !important; 
     box-shadow: none !important; 
-    overflow: visible !important; /* Desbloqueia o scroll nativo da página */
+    overflow: visible !important; 
     max-height: none !important;
   }
   
+  /* VITAL: Destrói o comportamento horizontal da tabela e limita larguras */
+  .table { min-width: 0 !important; width: 100% !important; table-layout: fixed; }
   .table, .table thead, .table tbody, .table tr, .table td, .table th {
-    display: block !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    position: static !important; /* Elimina travamentos de colunas sticky */
-    white-space: normal !important;
-    box-sizing: border-box !important;
+    display: block !important; width: 100% !important; min-width: 0 !important;
+    position: static !important; white-space: normal !important; box-sizing: border-box !important;
   }
   
   .table td, .table th { padding: 0 !important; border: none !important; background: transparent !important; }
@@ -260,26 +254,48 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .table thead { margin-bottom: 10px; }
   
   /* Modais Estilo "Tela Cheia" (Full Screen App Native) */
-  .modal-dialog { margin: 0 !important; max-width: 100vw !important; min-height: 100dvh !important; }
+  .modal-dialog { margin: 0 !important; max-width: 100vw !important; height: calc(var(--vh, 1vh) * 100) !important; }
+  
   #modalObra .modal-content, #modalResumoGeral .modal-content { 
     border-radius: 0 !important; border: none !important;
-    height: 100dvh !important; min-height: 100dvh !important; max-height: 100dvh !important; 
+    height: 100% !important; max-height: 100% !important; 
+    background-color: var(--bg-light) !important; /* CORRIGE BUG DE FUNDO NO SAFARI/MOBILE */
+    display: flex; flex-direction: column;
   }
-  #modalObra .modal-header, #modalResumoGeral .modal-header { align-items: flex-start; border-radius: 0; padding: 1rem 14px !important; }
-  #modalObra .modal-body, #modalResumoGeral .modal-body { padding: 1rem 14px 2rem 14px !important; }
+  
+  #modalObra .modal-header, #modalResumoGeral .modal-header { 
+    align-items: flex-start; border-radius: 0; padding: 1rem 14px !important; 
+    background-color: #ffffff !important; flex: 0 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 10;
+  }
+  
+  #modalObra .modal-body, #modalResumoGeral .modal-body { 
+    padding: 1.25rem 14px !important; background-color: var(--bg-light);
+    flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+  
   #modalObra .modal-header .ms-auto { flex-wrap: wrap; justify-content: flex-end; }
-  #modalObra .modal-footer { gap: 10px; border-radius: 0; padding-bottom: env(safe-area-inset-bottom, 1rem); }
-  #modalObra .modal-footer .btn { flex: 1 1 auto; }
+  
+  #modalObra .modal-footer { 
+    gap: 10px; border-radius: 0; 
+    padding: 1rem 14px calc(1rem + env(safe-area-inset-bottom)) 14px !important; 
+    background-color: #ffffff !important; flex: 0 0 auto;
+    box-shadow: 0 -2px 15px rgba(0,0,0,0.05); z-index: 10; border-top: 1px solid #e2e8f0 !important;
+  }
+  #modalObra .modal-footer .btn { flex: 1 1 auto; min-height: 48px; }
+  
   .material-label { font-size: 0.68rem; }
   
   /* Modais Estilo "Bottom Sheet" nativos do iOS/Android */
   #modalCompraItem .modal-dialog, #modalPendenciaItem .modal-dialog, #modalExtracaoRelatorio .modal-dialog {
-    align-items: flex-end !important; margin: 0; min-height: 100dvh;
+    align-items: flex-end !important; margin: 0; 
+    height: calc(var(--vh, 1vh) * 100) !important; min-height: calc(var(--vh, 1vh) * 100) !important;
   }
+  
   #modalCompraItem .modal-content, #modalPendenciaItem .modal-content, #modalExtracaoRelatorio .modal-content {
     border-radius: 24px 24px 0 0 !important; border: none !important; 
     padding-bottom: env(safe-area-inset-bottom, 1rem) !important;
-    min-height: auto !important; height: auto !important; max-height: 90dvh !important;
+    min-height: auto !important; height: auto !important; max-height: 90% !important;
+    background-color: #ffffff !important;
   }
   #modalCompraItem .modal-footer .btn, #modalPendenciaItem .modal-footer .btn, #modalExtracaoRelatorio .modal-footer .btn {
     min-height: 48px; font-size: 0.95rem;
@@ -363,6 +379,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .modal-top-action-fin { color: #0f9f6e; }
 .modal-top-action-geral { color: #2563eb; }
 
+#modalObra .modal-content, #modalResumoGeral .modal-content, #modalCompraItem .modal-content { position: relative; overflow: hidden; }
+#modalResumoGeral, #modalCompraItem { z-index: 1080 !important; }
+
 body.child-modal-open #modalObra .modal-content::after {
   content: ""; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.24); backdrop-filter: blur(1px); pointer-events: none; border-radius: inherit; z-index: 3;
 }
@@ -443,6 +462,42 @@ body.child-modal-open #modalObra .modal-footer { position: relative; z-index: 1;
 .geral-total-card { border: 1px solid #dbe7f3; background: linear-gradient(135deg, rgba(0,45,91,0.04) 0%, rgba(255,255,255,1) 100%); }
 .geral-progress-track { width: 100%; height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; margin-top: 8px; }
 .geral-progress-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0d6efd 0%, #36c275 100%); transition: width 0.3s ease; }
+@media (max-width: 768px) {
+  .geral-grid, .geral-finance-grid { grid-template-columns: 1fr; }
+  .geral-card { min-height: 78px; }
+  .geral-card-value.money { font-size: 1.2rem; }
+}
+
+/* ===== Ajustes de viewport e desempenho dos modais ===== */
+html, body { overscroll-behavior: none; }
+body { overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+body.modal-open { overflow: hidden !important; padding-right: 0 !important; overscroll-behavior: none; }
+.modal { overscroll-behavior: contain; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.modal-dialog { max-height: calc(100dvh - 1rem); margin: 0.5rem auto; }
+.modal-content { max-height: calc(100dvh - 1rem); }
+#modalObra .modal-content, #modalResumoGeral .modal-content, #modalCompraItem .modal-content {
+  display: flex; flex-direction: column; max-height: calc(100dvh - 1rem);
+}
+#modalObra .modal-body, #modalCompraItem .modal-body {
+  min-height: 0; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+}
+#modalResumoGeral .modal-dialog { display: flex; align-items: center; min-height: calc(100dvh - 1rem); }
+#modalResumoGeral .modal-content { height: min(92dvh, 900px); max-height: min(92dvh, 900px); }
+#modalResumoGeral .modal-body {
+  min-height: 0; overflow: auto !important; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent;
+}
+.resumo-modal-shell { display: flex; flex-direction: column; gap: 10px; min-height: min-content; height: auto; }
+.resumo-modal-scroll { min-height: 0; overflow: visible; }
+.resumo-modal-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.resumo-modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+.resumo-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+.finance-scroll-area { min-height: 0; overflow: visible; }
+.finance-table-shell { min-height: 0; width: 100%; }
+.finance-table-shell .table-responsive { max-height: min(40dvh, 360px); overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; border-radius: 0 0 14px 14px; }
+.finance-table-shell .table-responsive::-webkit-scrollbar { width: 6px; height: 6px; }
+.finance-table-shell .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+.finance-table-shell thead th { position: sticky; top: 0; z-index: 2; }
+.finance-table-shell tfoot td { position: sticky; bottom: 0; z-index: 1; }
 
 .export-menu-wrap { position: relative; }
 .extract-menu-panel { position: absolute; top: calc(100% + 10px); right: 0; min-width: 250px; background: rgba(255,255,255,0.98); border: 1px solid #dbe4ee; border-radius: 16px; box-shadow: 0 18px 34px rgba(15,23,42,0.12); padding: 8px; z-index: 1105; opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.98); transition: opacity .18s ease, transform .18s ease, visibility .18s ease; backdrop-filter: blur(12px); }
@@ -453,6 +508,10 @@ body.child-modal-open #modalObra .modal-footer { position: relative; z-index: 1;
 .extract-menu-btn strong { display:block; font-size: 0.92rem; font-weight: 800; color: #16314f; }
 .extract-menu-btn small { display:block; color: #6b7b90; line-height: 1.25; margin-top: 2px; }
 .extract-menu-divider { height: 1px; background: #edf2f7; margin: 6px 4px; }
+
+@media (max-width: 768px) {
+  .extract-menu-panel { right: -4px; min-width: 220px; }
+}
 
 .extract-choice-modal { border-radius: 24px; overflow: hidden; }
 .extract-choice-modal .modal-header, .extract-choice-modal .modal-footer { padding-left: 22px; padding-right: 22px; }
@@ -472,3 +531,8 @@ body.child-modal-open #modalObra .modal-footer { position: relative; z-index: 1;
 .extract-choice-form .form-control { font-size: 1.05rem; font-weight: 700; color:#16314f; }
 .extract-choice-hint { font-size: .78rem; color:#64748b; margin-top: 8px; }
 .extract-choice-divider { height:1px; background:#edf2f7; margin: 14px 0 12px; }
+
+@media (max-width: 768px) {
+  .extract-choice-grid { grid-template-columns: 1fr; }
+  .extract-choice-modal .modal-header, .extract-choice-modal .modal-footer, .extract-choice-modal .modal-body { padding-left: 16px; padding-right: 16px; }
+}
