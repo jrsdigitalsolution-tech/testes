@@ -15,11 +15,11 @@ const motorBackend = {
 
   sincronizarEFetch: async function() {
     try {
-      // 1. Conecta no seu servidor local na rede da empresa (O seu PC)
-      const response = await fetch('http://192.168.1.10:3000/api/carteira');
+      // 1. Conecta no servidor da empresa usando o Túnel Cloudflare (Seguro, HTTPS e Público)
+      const response = await fetch('https://thumbzilla-modern-refrigerator-simon.trycloudflare.com/api/carteira');
       
       if (!response.ok) {
-        throw new Error('Erro ao conectar no servidor local. Verifique se o terminal está rodando no PC.');
+        throw new Error('Erro ao conectar no servidor. Verifique se o túnel e o motor estão rodando.');
       }
       
       const erpData = await response.json();
