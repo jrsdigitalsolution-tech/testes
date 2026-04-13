@@ -16,7 +16,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       }
     });
     
-    // Sincroniza a lista suspensa no celular (Mobile Select)
+    // Sincroniza a nova lista suspensa do mobile para o status correto
     const mobileFilter = document.getElementById('mobileStatusFilter');
     if (mobileFilter && mobileFilter.value !== status) {
       mobileFilter.value = status;
@@ -444,7 +444,82 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     });
   }
 
-  // ==== MOTOR DE RENDERIZAÇÃO HÍBRIDO (PC VS MOBILE APP) ====
+  function lidarCliqueLinha(idx) {
+    if (!dadosLocais[idx] || !Array.isArray(dadosLocais[idx].content)) return;
+    const r = dadosLocais[idx].content;
+    const status = String(r[COLS.STATUS_PROPOSTA] || '').trim();
+    
+    if (status === 'FIRMADAS') {
+      editar(idx);
+    } else {
+      abrirResumoProposta(idx);
+    }
+  }
+
+  function abrirResumoProposta(idx) {
+    const r = dadosLocais[idx].content;
+    const obra = r[COLS.OBRA] || "";
+    const status = r[COLS.STATUS_PROPOSTA] || "-";
+    const valor = parseMoneyFlexible(r[COLS.VALOR]);
+    
+    const infoPrincipal = [
+      { icon: "bi-folder2-open", label: "Obra", valor: obra },
+      { icon: "bi-building", label: "Cliente", valor: r[COLS.CLIENTE] || "-" },
+      { icon: "bi-box-seam", label: "Item", valor: r[COLS.ITEM_GERAL] || "-" },
+      { icon: "bi-tags", label: "Categoria", valor: r[COLS.CATEGORIA_GERAL] || "-" },
+      { icon: "bi-person", label: "Responsável", valor: r[COLS.RESPONSAVEL] || "-" },
+      { icon: "bi-bar-chart", label: "Complexidade", valor: r[COLS.COMPLEXIDADE] || "-" }
+    ];
+
+    const infoComplementar = [
+      { icon: "bi-calendar-event", label: "Data Abertura", valor: formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || "-" },
+      { icon: "bi-geo-alt", label: "UF", valor: r[COLS.UF] || "-" },
+      { icon: "bi-diagram-3", label: "Etapa", valor: r[COLS.ETAPA] || "-" }
+    ];
+
+    if (status === 'ENVIADAS') {
+       infoComplementar.push({ icon: "bi-send", label: "Data Enviada", valor: formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || "-" });
+    } else if (status === 'FRUSTRADAS') {
+       infoComplementar.push({ icon: "bi-calendar-x", label: "Data Frustrada", valor: formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || "-" });
+    } else if (status === 'CONCLUIDAS' || status === 'ENTREGUES') {
+       infoComplementar.push({ icon: "bi-calendar-check", label: "Data Faturamento", valor: formatDateDisplayBR(r[COLS.DATA_FATURAMENTO]) || "-" });
+       infoComplementar.push({ icon: "bi-receipt", label: "NF", valor: r[COLS.NF] || "-" });
+    }
+
+    const montarCards = (arr) => arr.map(d => `<div class="geral-card"><div class="geral-card-label"><i class="bi ${d.icon} me-1"></i>${d.label}</div><div class="geral-card-value">${d.valor}</div></div>`).join('');
+
+    const html = `
+      <div class="resumo-modal-scroll">
+        <div class="geral-shell">
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados da Proposta (${status})</h6>
+            <div class="geral-grid">
+              ${montarCards(infoPrincipal)}
+            </div>
+          </section>
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-info-circle"></i> Situação e Datas</h6>
+            <div class="geral-grid">
+              ${montarCards(infoComplementar)}
+            </div>
+          </section>
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-wallet2"></i> Visão Financeira</h6>
+            <div class="geral-card geral-total-card">
+              <div class="geral-card-label"><i class="bi bi-currency-dollar me-1"></i>Valor da Proposta</div>
+              <div class="geral-card-value money">${formatMoneyBR(valor)}</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('tituloResumo').innerText = "Resumo da Obra - " + obra;
+    document.getElementById('corpoResumoGeral').innerHTML = html;
+    modalResumoUI.show();
+  }
+
+  // ==== MOTOR DE RENDERIZAÇÃO INTELIGENTE (PC vs MOBILE APP) ====
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
@@ -464,8 +539,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO NATIVA MOBILE (CARTÕES E SELECT) ====
-      head.innerHTML = ``; // Esconde o cabeçalho original da tabela no celular
+      // ==== RENDERIZAÇÃO MOBILE (CARDS COM BLOCK RIGOROSO) ====
+      head.innerHTML = ``; // Esconde o cabeçalho no celular
 
       dadosOrdenados.forEach(dO => {
         const r = Array.isArray(dO.content) ? dO.content : [];
@@ -476,41 +551,59 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         if (res.atraso && res.atrasoDias > maiorAtraso.valor) maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
 
-        html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
-        html += `<td class="block w-full p-0 bg-transparent border-0">`;
+        html += `<tr class="block w-full border-0 p-0 m-0 bg-transparent">`;
+        html += `<td class="block w-full p-0 border-0 bg-transparent">`;
         
-        // O Cartão Mobile: Bloqueio de Vazamento de Tela
-        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2.5 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
+        // O Cartão Mobile: Bloqueio de Vazamento de Tela absoluto
+        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full box-border flex flex-col mb-3 active:scale-[0.98] transition-transform cursor-pointer">`;
         
         // 1. LINHA 1: Obra (Esquerda) e Valor (Direita)
-        html += `  <div class="flex items-center justify-between w-full gap-2">`;
-        html += `    <div class="flex items-center gap-2 min-w-0">`; 
-        html += `      <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
-        html += `        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
-        html += `      </div>`;
-        html += `      <span class="font-black text-slate-900 text-[1.2rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `  <div class="flex justify-between items-center w-full mb-3">`;
+        html += `    <div class="flex items-center gap-2">`; 
+        html += `      <i class="bi bi-journal-text text-blue-600 text-xl"></i>`;
+        html += `      <span class="font-black text-slate-900 text-xl">${r[COLS.OBRA] || "-"}</span>`;
         html += `    </div>`;
-        html += `    <div class="text-right shrink-0">`; 
-        html += `      <span class="font-black text-primary text-[1.1rem] leading-none whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
-        html += `    </div>`;
+        html += `    <span class="font-black text-blue-700 text-lg whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
         html += `  </div>`;
 
         // 2. LINHA 2: Cliente + Item 
-        html += `  <div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 overflow-hidden">`;
-        html += `    <span class="text-slate-700 text-[0.7rem] font-bold leading-snug line-clamp-2 uppercase"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `    <span class="text-slate-500 text-[0.65rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        html += `  <div class="bg-slate-50 p-2 rounded border border-slate-100 mb-3 w-full overflow-hidden">`;
+        html += `    <div class="text-slate-700 text-xs font-bold uppercase truncate mb-1"><i class="bi bi-person text-slate-400 mr-1"></i>${r[COLS.CLIENTE] || "-"}</div>`;
+        html += `    <div class="text-slate-500 text-xs truncate"><i class="bi bi-box-seam text-slate-400 mr-1"></i>${r[COLS.ITEM_GERAL] || "-"}</div>`;
         html += `  </div>`;
 
         // 3. LINHA 3: Prazo (Esquerda) e Compras (Direita)
-        html += `  <div class="flex items-center justify-between w-full pt-1">`;
-        html += `    <div class="flex flex-col items-start min-w-0">`;
-        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
-        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
-        html += `    </div>`;
-        html += `    <div class="flex flex-col items-end shrink-0">`;
-        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
-        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
-        html += `    </div>`;
+        html += `  <div class="flex justify-between items-center w-full pt-1">`;
+        
+        if (isGeralView) {
+            let statusBadgeClass = "days-badge shadow-sm ";
+            const stProp = r[COLS.STATUS_PROPOSTA] || "";
+            if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
+            else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
+            else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
+            else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
+            else statusBadgeClass += "bg-light text-secondary";
+
+            html += `    <div class="flex flex-col items-start">`;
+            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Status</span>`;
+            html += `      <span class="${statusBadgeClass} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center">${stProp || "-"}</span>`;
+            html += `    </div>`;
+            html += `    <div class="flex flex-col items-end">`;
+            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Prazo</span>`;
+            const prazoEx = isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-");
+            html += `      <span class="text-slate-700 text-sm font-bold">${prazoEx}</span>`;
+            html += `    </div>`;
+        } else {
+            html += `    <div class="flex flex-col items-start">`;
+            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Prazo</span>`;
+            html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${res.texto}</span>`;
+            html += `    </div>`;
+            html += `    <div class="flex flex-col items-end">`;
+            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Compras</span>`;
+            html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${resCompras.texto}</span>`;
+            html += `    </div>`;
+        }
+        
         html += `  </div>`;
 
         html += `</div>`;
@@ -602,7 +695,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
           else statusBadgeClass += "bg-light text-secondary";
 
-          html += `<tr onclick="editar(${dO.originalIndex})">`;
+          html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
           html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
           html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
           html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
@@ -1447,20 +1540,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const viewport = document.querySelector('.table-viewport');
     if (!viewport) return;
 
-    if (window.innerWidth <= 768) {
-      viewport.style.maxHeight = 'none';
-      viewport.style.overflow = 'visible';
-      viewport.classList.remove('table-scroll-locked');
-    } else {
-      const viewportTop = viewport.getBoundingClientRect().top;
-      const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-      const margemInferior = 40; 
-      const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
+    const viewportTop = viewport.getBoundingClientRect().top;
+    const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const margemInferior = window.innerWidth <= 768 ? 20 : 40; 
+    const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
 
-      viewport.style.maxHeight = `${alturaDisponivel}px`;
-      viewport.style.overflow = 'auto';
-      viewport.classList.add('table-scroll-locked');
-    }
+    viewport.style.maxHeight = `${alturaDisponivel}px`;
+    viewport.classList.add('table-scroll-locked');
   }
 
   window.addEventListener('resize', () => {
