@@ -490,42 +490,40 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<td class="block w-full p-0 bg-transparent border-0">`;
         
         // RESTAURADO O COMPORTAMENTO DE CLIQUE ORIGINAL DO PC
-        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
+        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
         
-        // 1. TOPO: Ícone de Projeto e Número da Obra isolados
-        html += `<div class="flex items-center gap-3 w-full mb-1">`;
+        // 1. LINHA 1: Obra (Esquerda) e Valor (Direita)
+        html += `<div class="flex items-center justify-between w-full">`;
+        html += `<div class="flex items-center gap-3">`;
         html += `<div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
-        // Ícone elegante de prancheta/projeto
         html += `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
         html += `</div>`;
-        html += `<span class="font-black text-slate-900 text-[1.4rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `<span class="font-black text-slate-900 text-[1.3rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `</div>`;
+        html += `<div class="text-right">`;
+        html += `<span class="font-black text-primary text-[1.1rem] leading-none whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
+        html += `</div>`;
         html += `</div>`;
 
-        // 2. LINHA DE STATUS: Prazo e Compras lado a lado
-        html += `<div class="flex items-center gap-4 w-full border-b border-slate-100 pb-3 mb-1 pl-1">`;
+        // 2. LINHA 2: Cliente + Item 
+        html += `<div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 overflow-hidden">`;
+        html += `<span class="text-slate-700 text-[0.75rem] font-bold leading-snug line-clamp-2 uppercase"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `<span class="text-slate-500 text-[0.7rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        html += `</div>`;
+
+        // 3. LINHA 3: Prazo (Esquerda) e Compras (Direita)
+        html += `<div class="flex items-center justify-between w-full pt-1">`;
         
         html += `<div class="flex flex-col items-start shrink-0">`;
-        html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Prazo</span>`;
-        html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0">${res.texto}</span>`;
+        html += `<span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
+        html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
         html += `</div>`;
         
-        html += `<div class="flex flex-col items-start shrink-0">`;
-        html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Compras</span>`;
-        html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0">${resCompras.texto}</span>`;
+        html += `<div class="flex flex-col items-end shrink-0">`;
+        html += `<span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
+        html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
         html += `</div>`;
 
-        html += `</div>`;
-
-        // 3. CORPO DO CARTÃO (Cliente e Item)
-        html += `<div class="flex flex-col w-full bg-slate-50 p-3 rounded-lg border border-slate-100 gap-1.5 overflow-hidden mt-1">`;
-        html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-snug line-clamp-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `<span class="text-slate-500 text-[0.75rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
-        html += `</div>`;
-
-        // 4. RODAPÉ: Valor Total Centralizado
-        html += `<div class="flex flex-col items-center justify-center w-full mt-2 pt-1 pb-1 gap-1">`;
-        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Valor Total</span>`;
-        html += `<span class="font-black text-primary text-[1.25rem] leading-none">R$ ${formatMoneyBR(val)}</span>`;
         html += `</div>`;
 
         html += `</div></td></tr>`;
