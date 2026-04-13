@@ -67,7 +67,8 @@
 
   <!-- A BARRA DE FILTROS QUE EU TINHA REMOVIDO FOI RESTAURADA! -->
   <div class="filter-wrapper-header">
-    <div class="status-filters" id="filterContainer">
+    <!-- BOTÕES DO PC (Intactos, escondidos no celular) -->
+    <div class="status-filters desktop-only" id="filterContainer">
       <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
       <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
       <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
@@ -75,7 +76,23 @@
       <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
       <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
     </div>
-    <div class="table-scroll-label">Arraste para ver mais →</div>
+
+    <!-- LISTA SUSPENSA MOBILE (Nova, escondida no PC) -->
+    <div class="mobile-only w-full">
+      <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 w-full box-border">
+        <span class="text-[0.75rem] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5"><i class="bi bi-stack"></i> Exibir Status</span>
+        <select id="mobileStatusFilter" class="bg-slate-50 border border-slate-200 text-slate-700 text-[0.8rem] font-bold rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary w-full max-w-[180px]" onchange="setFilter(this.value)">
+          <option value="FIRMADAS" selected>Firmadas</option>
+          <option value="TODAS">Todas</option>
+          <option value="ENVIADAS">Enviadas</option>
+          <option value="FRUSTRADAS">Frustradas</option>
+          <option value="ENTREGUES">Entregues</option>
+          <option value="CONCLUIDAS">Concluídas</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="table-scroll-label desktop-only">Arraste para ver mais →</div>
   </div>
 
   <div class="table-viewport shadow-sm transform-gpu">
