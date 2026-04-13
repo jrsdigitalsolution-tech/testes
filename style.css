@@ -10,7 +10,7 @@
 }
 
 html { scroll-behavior: smooth; }
-/* REMOVIDO: overflow-x: hidden e overscroll-behavior-y: none para restaurar navegação fluida nativa no mobile */
+/* REMOVIDO: overflow-x e overscroll-behavior-y para o celular voltar a ter scroll nativo e suave */
 body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; color: #1e293b; margin: 0; padding-bottom: env(safe-area-inset-bottom, 20px); -webkit-text-size-adjust: 100%; }
 
 .btn, .filter-btn, .material-toggle, .mini-status-btn, .modal-top-action, .extract-menu-btn, .stat-card {
@@ -293,6 +293,8 @@ body.child-modal-open #modalObra .modal-footer { position: relative; z-index: 1;
 .finance-insight-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .finance-insight-card-label { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; line-height: 1.05; }
 .finance-insight-card-value { font-size: 0.86rem; font-weight: 800; color: #1e293b; line-height: 1.15; }
+.finance-insight-card-meta { font-size: 0.76rem; color: #475569; font-weight: 700; line-height: 1.35; }
+.finance-insight-highlight { color: #0f172a; font-weight: 800; }
 .finance-kpi-list { display: grid; gap: 7px; margin-top: 8px; }
 .finance-kpi-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 7px; border-top: 1px solid #e7eef6; font-size: 0.76rem; line-height: 1.25; }
 .finance-kpi-name { color: #64748b; font-weight: 700; min-width: 0; }
@@ -366,7 +368,7 @@ body.modal-open { overflow: hidden !important; padding-right: 0 !important; over
 .btn-extract-modern i { font-size: 1.18rem; }
 .extract-menu-panel { position: absolute; top: calc(100% + 10px); right: 0; min-width: 250px; background: rgba(255,255,255,0.98); border: 1px solid #dbe4ee; border-radius: 16px; box-shadow: 0 18px 34px rgba(15,23,42,0.12); padding: 8px; z-index: 1105; opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.98); transition: opacity .18s ease, transform .18s ease, visibility .18s ease; backdrop-filter: blur(12px); }
 .extract-menu-panel.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-.extract-menu-btn { width: 100%; border: none; background: transparent; text-align: left; border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; color: #243449; transition: background .18s ease, transform .18s ease; }
+.extract-menu-btn { width: 100%; border: none; background: transparent; text-align: left; border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; color: #243449; transition: background .18s ease, transform .18s ease; touch-action: manipulation; }
 .extract-menu-btn:hover { background: #f8fbff; transform: translateX(2px); }
 .extract-menu-btn i { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; background: #eef4fb; color: var(--secondary); }
 .extract-menu-btn strong { display:block; font-size: 0.92rem; font-weight: 800; color: #16314f; }
@@ -413,63 +415,26 @@ body.modal-open { overflow: hidden !important; padding-right: 0 !important; over
   
   .filter-wrapper-header {
     margin-bottom: 0px !important;
-    padding: 0 10px; /* Reduzido para dar mais espaço */
+    padding: 0 14px;
   }
   
-  /* RESTAURA NAVEGAÇÃO NATIVA E SUAVE */
-  body, html {
-    overflow-x: visible !important; /* Remover overflow hidden que trava o scroll */
-    overscroll-behavior-y: auto !important; /* Restaura o elástico nativo do iOS/Android */
-  }
-  
-  /* ESTA REGRA IMPEDE OS CARTÕES DE VAZAREM DA TELA NO CELULAR */
+  /* ESTA REGRA IMPEDE OS CARTÕES DE VAZAREM DA TELA NO CELULAR E FORÇA A LISTA */
   .table-viewport { 
-    margin: 0 10px 20px 10px !important; 
+    margin: 0 14px 20px 14px !important; 
     background: transparent !important; 
     border: none !important; 
     box-shadow: none !important; 
-    overflow: visible !important; /* Permite scroll nativo da página */
+    overflow: visible !important; 
     width: auto !important;
-    max-height: none !important; /* Remove limite de altura que criava duplo scroll */
+    max-height: none !important;
   }
   
-  /* CONVERTE A TABELA NUMA LISTA PERFEITA DE CARTÕES (Sem limites de largura quebrados) */
-  .table { 
-    display: block !important; 
-    width: 100% !important; 
-  }
-  .table thead { 
-    display: none !important; /* Esconde o thead no mobile para evitar overflow */
-  }
-  .table tbody { 
-    display: flex !important; 
-    flex-direction: column !important; 
-    gap: 12px !important; /* Espaçamento exato entre os cards em vez de margem no tr */
-    width: 100% !important; 
-  }
-  .table tr { 
-    display: flex !important; 
-    flex-direction: column !important;
-    width: 100% !important; 
-    background: transparent !important; 
-    border: none !important;
-    margin: 0 !important;
-  }
-  .table td { 
-    display: block !important; 
-    width: 100% !important; 
-    padding: 0 !important; 
-    border: none !important; 
-    background: transparent !important; 
-    box-sizing: border-box !important;
-  }
-  
-  /* Garante que o interior do td obedeça as margens do celular */
-  .table td > div {
-     box-sizing: border-box !important;
-     width: 100% !important;
-     max-width: 100vw !important;
-  }
+  .table { display: block !important; width: 100% !important; max-width: 100% !important; table-layout: fixed; }
+  .table thead { display: none !important; }
+  .table tbody { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
+  .table tr { display: flex !important; flex-direction: column !important; width: 100% !important; background: transparent !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+  .table td { display: block !important; width: 100% !important; padding: 0 !important; border: none !important; background: transparent !important; box-sizing: border-box !important; }
+  .table td > div { box-sizing: border-box !important; width: 100% !important; max-width: 100% !important; }
   
   .days-badge { min-width: 70px; font-size: 0.65rem; }
 
