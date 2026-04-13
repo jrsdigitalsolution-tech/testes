@@ -313,7 +313,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const ano = String(hoje.getFullYear()).slice(-2);
     
-    // RESTAURADO OS ÍCONES CORRETOS COM ESPAÇAMENTO me-1
     document.getElementById('txtDataAtual').innerHTML = `<i class="bi bi-calendar3 me-1"></i> ${dia}/${mes}/${ano}`;
     const inicioAno = new Date(hoje.getFullYear(), 0, 1);
     const dias = Math.floor((hoje - inicioAno) / (24 * 60 * 60 * 1000));
@@ -450,9 +449,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
-    const viewport = document.querySelector('.table-viewport');
 
-    // FILTRAGEM MANTIDA (Para as abas funcionarem corretamente)
     const dados = dadosOriginais.filter(d => {
       if (currentStatusFilter === 'TODAS') return true;
       return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
@@ -466,23 +463,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     let maiorAtraso = { texto: "-", valor: 0 };
 
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO NATIVA MOBILE (Apenas esta parte muda no telemóvel) ====
-      head.innerHTML = `
-        <tr class="block w-full mb-3 bg-transparent border-0">
-          <td class="block w-full p-0 bg-transparent border-0">
-            <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 w-full box-border">
-              <span class="text-[0.75rem] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5"><i class="bi bi-funnel"></i> Ordenar</span>
-              <select class="bg-slate-50 border border-slate-200 text-slate-700 text-[0.8rem] font-bold rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary w-full max-w-[180px]" onchange="if(this.value) { toggleOrdenacao(this.value); this.value=''; }">
-                <option value="" disabled selected>Selecione...</option>
-                <option value="obra">Obra (A-Z)</option>
-                <option value="valor">Maior Valor</option>
-                <option value="prazo">Prazo / Atraso</option>
-                <option value="compras">Status Compras</option>
-              </select>
-            </div>
-          </td>
-        </tr>
-      `;
+      // Limpa o cabeçalho no celular para não gastar espaço
+      head.innerHTML = ``;
 
       dadosOrdenados.forEach(dO => {
         const r = Array.isArray(dO.content) ? dO.content : [];
@@ -496,44 +478,42 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
         html += `<td class="block w-full p-0 bg-transparent border-0">`;
         
-        // RESTAURADO O COMPORTAMENTO DE CLIQUE ORIGINAL DO PC
-        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
+        // CAIXA DO CARTÃO - Proteção Extrema contra Vazamento (overflow-hidden e box-border)
+        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2.5 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
         
         // 1. LINHA 1: Obra (Esquerda) e Valor (Direita)
-        html += `<div class="flex items-center justify-between w-full">`;
-        html += `<div class="flex items-center gap-3">`;
-        html += `<div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
-        html += `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
-        html += `</div>`;
-        html += `<span class="font-black text-slate-900 text-[1.3rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
-        html += `</div>`;
-        html += `<div class="text-right">`;
-        html += `<span class="font-black text-primary text-[1.1rem] leading-none whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
-        html += `</div>`;
-        html += `</div>`;
+        html += `  <div class="flex items-center justify-between w-full gap-2">`;
+        html += `    <div class="flex items-center gap-2 min-w-0">`; // min-w-0 permite truncar textos grandes
+        html += `      <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
+        html += `        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
+        html += `      </div>`;
+        html += `      <span class="font-black text-slate-900 text-[1.2rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `    </div>`;
+        html += `    <div class="text-right shrink-0">`; // shrink-0 impede que o Valor seja esmagado
+        html += `      <span class="font-black text-primary text-[1.1rem] leading-none whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
+        html += `    </div>`;
+        html += `  </div>`;
 
         // 2. LINHA 2: Cliente + Item 
-        html += `<div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 overflow-hidden">`;
-        html += `<span class="text-slate-700 text-[0.75rem] font-bold leading-snug line-clamp-2 uppercase"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `<span class="text-slate-500 text-[0.7rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</span>`;
-        html += `</div>`;
+        html += `  <div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 overflow-hidden">`;
+        html += `    <span class="text-slate-700 text-[0.7rem] font-bold leading-snug line-clamp-2 uppercase"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `    <span class="text-slate-500 text-[0.65rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        html += `  </div>`;
 
         // 3. LINHA 3: Prazo (Esquerda) e Compras (Direita)
-        html += `<div class="flex items-center justify-between w-full pt-1">`;
-        
-        html += `<div class="flex flex-col items-start shrink-0">`;
-        html += `<span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
-        html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
-        html += `</div>`;
-        
-        html += `<div class="flex flex-col items-end shrink-0">`;
-        html += `<span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
-        html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
-        html += `</div>`;
+        html += `  <div class="flex items-center justify-between w-full pt-1">`;
+        html += `    <div class="flex flex-col items-start min-w-0">`;
+        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
+        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
+        html += `    </div>`;
+        html += `    <div class="flex flex-col items-end shrink-0">`;
+        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
+        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
+        html += `    </div>`;
+        html += `  </div>`;
 
         html += `</div>`;
-
-        html += `</div></td></tr>`;
+        html += `</td></tr>`;
       });
 
     } else {
@@ -558,7 +538,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-        // RESTAURADO O COMPORTAMENTO DE CLIQUE ORIGINAL DO PC
         html += `<tr onclick="editar(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
@@ -1392,7 +1371,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     }
   }
 
-  // ==== FIX DE SAFE AREA E TECLADO PARA IOS/ANDROID ====
   function setupMobileViewport() {
     const setVh = () => {
       const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
