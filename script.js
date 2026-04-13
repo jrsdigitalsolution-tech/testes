@@ -16,7 +16,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       }
     });
     
-    // Sincroniza a nova lista suspensa do mobile para o status correto
+    // Sincroniza a lista suspensa no celular (Mobile Select)
     const mobileFilter = document.getElementById('mobileStatusFilter');
     if (mobileFilter && mobileFilter.value !== status) {
       mobileFilter.value = status;
@@ -82,7 +82,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           <div style="text-align:center; padding: 30px;">
             <i class="bi bi-file-earmark-x text-danger d-block mb-3" style="font-size: 3.5rem;"></i>
             <h4 class="text-danger fw-bold">ARQUIVO DO MOTOR NÃO ENCONTRADO</h4>
-            <p class="text-muted mt-2">O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.</p>
+            <p class="text-muted mt-2">O navegador tentou ligar o motor local, mas o arquivo não foi carregado.</p>
           </div>
         `;
         document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
@@ -312,12 +312,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const dia = String(hoje.getDate()).padStart(2, '0');
     const mes = String(hoje.getMonth() + 1).padStart(2, '0');
     const ano = String(hoje.getFullYear()).slice(-2);
-    
-    document.getElementById('txtDataAtual').innerHTML = `<i class="bi bi-calendar3 me-1"></i> ${dia}/${mes}/${ano}`;
+    document.getElementById('txtDataAtual').innerHTML = `<i class="bi bi-calendar3"></i> ${dia}/${mes}/${ano}`;
     const inicioAno = new Date(hoje.getFullYear(), 0, 1);
     const dias = Math.floor((hoje - inicioAno) / (24 * 60 * 60 * 1000));
     const semana = Math.ceil((hoje.getDay() + 1 + dias) / 7);
-    document.getElementById('txtSemanaAtual').innerHTML = `<i class="bi bi-calendar-week me-1"></i> Semana ${semana}`;
+    document.getElementById('txtSemanaAtual').innerHTML = `<i class="bi bi-calendar-week"></i> Semana ${semana}`;
   }
 
   function calcularPorcentagem(r) {
@@ -445,84 +444,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     });
   }
 
-  // RESTAURADO: Lógica de clique que diferencia as abas no PC
-  function lidarCliqueLinha(idx) {
-    if (!dadosLocais[idx] || !Array.isArray(dadosLocais[idx].content)) return;
-    const r = dadosLocais[idx].content;
-    const status = String(r[COLS.STATUS_PROPOSTA] || '').trim();
-
-    if (status === 'FIRMADAS') {
-      editar(idx);
-    } else {
-      abrirResumoProposta(idx);
-    }
-  }
-
-  // RESTAURADO: O modal de resumo para as outras abas no PC
-  function abrirResumoProposta(idx) {
-    const r = dadosLocais[idx].content;
-    const obra = r[COLS.OBRA] || "";
-    const status = r[COLS.STATUS_PROPOSTA] || "-";
-    const valor = parseMoneyFlexible(r[COLS.VALOR]);
-
-    const infoPrincipal = [
-      { icon: "bi-folder2-open", label: "Obra", valor: obra },
-      { icon: "bi-building", label: "Cliente", valor: r[COLS.CLIENTE] || "-" },
-      { icon: "bi-box-seam", label: "Item", valor: r[COLS.ITEM_GERAL] || "-" },
-      { icon: "bi-tags", label: "Categoria", valor: r[COLS.CATEGORIA_GERAL] || "-" },
-      { icon: "bi-person", label: "Responsável", valor: r[COLS.RESPONSAVEL] || "-" },
-      { icon: "bi-bar-chart", label: "Complexidade", valor: r[COLS.COMPLEXIDADE] || "-" }
-    ];
-
-    const infoComplementar = [
-      { icon: "bi-calendar-event", label: "Data Abertura", valor: formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || "-" },
-      { icon: "bi-geo-alt", label: "UF", valor: r[COLS.UF] || "-" },
-      { icon: "bi-diagram-3", label: "Etapa", valor: r[COLS.ETAPA] || "-" }
-    ];
-
-    if (status === 'ENVIADAS') {
-       infoComplementar.push({ icon: "bi-send", label: "Data Enviada", valor: formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || "-" });
-    } else if (status === 'FRUSTRADAS') {
-       infoComplementar.push({ icon: "bi-calendar-x", label: "Data Frustrada", valor: formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || "-" });
-    } else if (status === 'CONCLUIDAS' || status === 'ENTREGUES') {
-       infoComplementar.push({ icon: "bi-calendar-check", label: "Data Faturamento", valor: formatDateDisplayBR(r[COLS.DATA_FATURAMENTO]) || "-" });
-       infoComplementar.push({ icon: "bi-receipt", label: "NF", valor: r[COLS.NF] || "-" });
-    }
-
-    const montarCards = (arr) => arr.map(d => `<div class="geral-card"><div class="geral-card-label"><i class="bi ${d.icon} me-1"></i>${d.label}</div><div class="geral-card-value">${d.valor}</div></div>`).join('');
-
-    const html = `
-      <div class="resumo-modal-scroll">
-        <div class="geral-shell">
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados da Proposta (${status})</h6>
-            <div class="geral-grid">
-              ${montarCards(infoPrincipal)}
-            </div>
-          </section>
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-info-circle"></i> Situação e Datas</h6>
-            <div class="geral-grid">
-              ${montarCards(infoComplementar)}
-            </div>
-          </section>
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-wallet2"></i> Visão Financeira</h6>
-            <div class="geral-card geral-total-card">
-              <div class="geral-card-label"><i class="bi bi-currency-dollar me-1"></i>Valor da Proposta</div>
-              <div class="geral-card-value money">${formatMoneyBR(valor)}</div>
-            </div>
-          </section>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('tituloResumo').innerText = "Resumo da Obra - " + obra;
-    document.getElementById('corpoResumoGeral').innerHTML = html;
-    modalResumoUI.show();
-  }
-
-  // ==== MOTOR DE RENDERIZAÇÃO HÍBRIDO ====
+  // ==== MOTOR DE RENDERIZAÇÃO HÍBRIDO (PC VS MOBILE APP) ====
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
@@ -534,20 +456,16 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
     const dadosOrdenados = ordenarDados(dados);
     const isMobileView = window.innerWidth <= 768; 
-    
-    // RESTAURADO: Saber se estamos na visão geral ou nas firmadas para o PC
     const isGeralView = currentStatusFilter !== 'FIRMADAS';
     
     let html = "";
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
-    
-    // RESTAURADO: Cálculo para o PC usar nas outras abas
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO NATIVA MOBILE COM NOVOS CARTÕES ====
-      head.innerHTML = ``; // Esconde cabeçalho
+      // ==== RENDERIZAÇÃO NATIVA MOBILE (CARTÕES E SELECT) ====
+      head.innerHTML = ``; // Esconde o cabeçalho original da tabela no celular
 
       dadosOrdenados.forEach(dO => {
         const r = Array.isArray(dO.content) ? dO.content : [];
@@ -561,50 +479,53 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
         html += `<td class="block w-full p-0 bg-transparent border-0">`;
         
-        // CAIXA DO CARTÃO - Seguro contra vazamentos (overflow-hidden, min-w-0)
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 w-full overflow-hidden active:scale-[0.98] transition-transform cursor-pointer box-border">`;
-
-        // LINHA 1: Ícone + Obra (Esquerda) | Valor (Direita)
-        html += `  <div class="flex justify-between items-center mb-3 gap-2">`;
-        html += `    <div class="flex items-center gap-2 min-w-0">`;
-        html += `      <i class="bi bi-journal-text text-blue-600 text-xl shrink-0"></i>`;
-        html += `      <span class="font-black text-slate-900 text-xl truncate">${r[COLS.OBRA] || "-"}</span>`;
+        // O Cartão Mobile: Bloqueio de Vazamento de Tela
+        html += `<div onclick="editar(${dO.originalIndex})" class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2.5 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
+        
+        // 1. LINHA 1: Obra (Esquerda) e Valor (Direita)
+        html += `  <div class="flex items-center justify-between w-full gap-2">`;
+        html += `    <div class="flex items-center gap-2 min-w-0">`; 
+        html += `      <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
+        html += `        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
+        html += `      </div>`;
+        html += `      <span class="font-black text-slate-900 text-[1.2rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
         html += `    </div>`;
-        html += `    <span class="font-black text-blue-700 text-lg shrink-0 whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
+        html += `    <div class="text-right shrink-0">`; 
+        html += `      <span class="font-black text-primary text-[1.1rem] leading-none whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
+        html += `    </div>`;
         html += `  </div>`;
 
-        // LINHA 2: Cliente + Item
-        html += `  <div class="bg-slate-50 p-2 rounded border border-slate-100 mb-3 overflow-hidden">`;
-        html += `    <div class="text-slate-700 text-xs font-bold uppercase truncate mb-1"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</div>`;
-        html += `    <div class="text-slate-500 text-xs truncate"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</div>`;
+        // 2. LINHA 2: Cliente + Item 
+        html += `  <div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 overflow-hidden">`;
+        html += `    <span class="text-slate-700 text-[0.7rem] font-bold leading-snug line-clamp-2 uppercase"><i class="bi bi-person text-slate-400 mr-1"></i> ${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `    <span class="text-slate-500 text-[0.65rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1"></i> ${r[COLS.ITEM_GERAL] || "-"}</span>`;
         html += `  </div>`;
 
-        // LINHA 3: Prazo (Esquerda) | Compras (Direita)
-        html += `  <div class="flex justify-between items-center w-full pt-1">`;
-        html += `    <div class="flex flex-col min-w-0">`;
-        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-1">Prazo</span>`;
-        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${res.texto}</span>`;
+        // 3. LINHA 3: Prazo (Esquerda) e Compras (Direita)
+        html += `  <div class="flex items-center justify-between w-full pt-1">`;
+        html += `    <div class="flex flex-col items-start min-w-0">`;
+        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
+        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
         html += `    </div>`;
         html += `    <div class="flex flex-col items-end shrink-0">`;
-        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-1">Compras</span>`;
-        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${resCompras.texto}</span>`;
+        html += `      <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
+        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
         html += `    </div>`;
         html += `  </div>`;
 
-        html += `</div></td></tr>`;
+        html += `</div>`;
+        html += `</td></tr>`;
       });
 
     } else {
-      // ==== RENDERIZAÇÃO PC (A TABELA ORIGINAL RESTAURADA) ====
-      
+      // ==== RENDERIZAÇÃO PC (A TABELA ORIGINAL RESTAURADA, INTOCADA) ====
       if (!isGeralView) {
-        // Tabela Editável (Aba Firmadas)
         const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
         head.innerHTML = "<tr>" + labs.map(l => {
           const chave = mapaOrdenacaoCabecalho[l];
           const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
           return chave
-            ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')" aria-label="Ordenar ${l}"><span>${l}</span>${getSortIcon(l)}</button></th>`
+            ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')"><span>${l}</span>${getSortIcon(l)}</button></th>`
             : `<th><span class="table-head-label">${l}</span></th>`;
         }).join('') + "</tr>";
 
@@ -619,7 +540,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
           const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-          html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+          html += `<tr onclick="editar(${dO.originalIndex})">`;
           html += `<td>${r[COLS.OBRA] || ""}</td>`;
           html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
           html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
@@ -653,9 +574,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
           html += `</tr>`;
         });
-      
       } else {
-        // Tabela Somente Leitura (Outras Abas do PC)
         const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
         const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
         if (isFrustrada) labs.push("DATA FRUSTRADA");
@@ -683,7 +602,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
           else statusBadgeClass += "bg-light text-secondary";
 
-          html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+          html += `<tr onclick="editar(${dO.originalIndex})">`;
           html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
           html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
           html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
@@ -705,19 +624,16 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           html += `</tr>`;
         });
       }
-    }
+    } 
 
     if (dados.length === 0) {
-      const colSpan = isMobileView ? 1 : (isGeralView ? (currentStatusFilter === 'FRUSTRADAS' ? 15 : 14) : 20);
+      const colSpan = isMobileView ? 1 : 20;
       body.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-10 text-slate-400 bg-transparent border-0"><i class="bi bi-folder2-open d-block mb-3 text-4xl"></i><span class="font-bold">Nenhum registro encontrado nesta visualização.</span></td></tr>`;
     } else {
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
       body.classList.add('animate-fade-up');
-      
-      requestAnimationFrame(() => {
-        body.innerHTML = html;
-      });
+      requestAnimationFrame(() => { body.innerHTML = html; });
     }
 
     const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
@@ -941,6 +857,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function atualizarFaturamentoPrevistoFormulario() { const dataPrevista = calcularFaturamentoPrevistoFormulario(); aplicarStatusDataNoFormulario('fatur', dataPrevista); }
+
+  function abrirNovo() { 
+    document.getElementById('formPrincipal').reset(); document.getElementById('data_entrada_orig').value = ""; document.getElementById('cpmv_obra_val').value = "";
+    ITENS.forEach(it => { const id = getSafeId(it); limparCamposDetalhesItem(id); setStatus(id, 'N/A'); });
+    document.getElementById('modalObraTitle').innerText = 'CADASTRO DE OBRA'; document.getElementById('btnFin').style.display = 'none'; document.getElementById('btnGeral').style.display = 'none';
+    atualizarFaturamentoPrevistoFormulario(); recolherTodosItens(); modalUI.show(); 
+  }
 
   function salvar() {
     const btn = document.getElementById('btnSalvar'); if (!btn || btn.disabled) return;
