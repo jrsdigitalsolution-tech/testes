@@ -9,12 +9,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function setFilter(status) {
     currentStatusFilter = status;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.classList.remove('active');
-      if (btn.getAttribute('data-status') === status) {
-        btn.classList.add('active');
-      }
-    });
+    const selectEl = document.getElementById('statusFilter');
+    if (selectEl && selectEl.value !== status) {
+      selectEl.value = status;
+    }
     renderizar(dadosLocais.slice(1));
   }
 
