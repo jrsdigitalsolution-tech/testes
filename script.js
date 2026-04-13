@@ -15,13 +15,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         btn.classList.add('active');
       }
     });
-    
-    // Sincroniza a nova lista suspensa do mobile para o status correto
-    const mobileFilter = document.getElementById('mobileStatusFilter');
-    if (mobileFilter && mobileFilter.value !== status) {
-      mobileFilter.value = status;
-    }
-    
     renderizar(dadosLocais.slice(1));
   }
 
@@ -82,7 +75,14 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           <div style="text-align:center; padding: 30px;">
             <i class="bi bi-file-earmark-x text-danger d-block mb-3" style="font-size: 3.5rem;"></i>
             <h4 class="text-danger fw-bold">ARQUIVO DO MOTOR NÃO ENCONTRADO</h4>
-            <p class="text-muted mt-2">O navegador tentou ligar o motor local, mas o arquivo não foi carregado.</p>
+            <p class="text-muted mt-2">O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.</p>
+            <div class="text-start d-inline-block bg-light p-3 rounded border mt-3 shadow-sm">
+              <strong>O que você deve fazer agora:</strong><br><br>
+              1. Vá na sua pasta do Windows.<br>
+              2. Tem um arquivo lá chamado <strong>motorbackand</strong> (com a letra A).<br>
+              3. Renomeie ele para <strong>motorbackend.js</strong> (com a letra E).<br>
+              4. Depois de renomear, volte aqui e aperte F5.
+            </div>
           </div>
         `;
         document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
@@ -178,7 +178,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return Number.isFinite(num) && num >= 0 ? String(num) : "";
   }
 
-  // ==== MOTOR DE CONVERSÃO FINANCEIRA ====
+  // ==== NOVO MOTOR DE CONVERSÃO FINANCEIRA (100% BLINDADO) ====
   function parseMoneyFlexible(value) {
     if (value === null || value === undefined || value === '') return 0;
     if (typeof value === 'number') return value;
@@ -272,11 +272,21 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   let dadosLocais = [];
   let estadoOrdenacao = { key: "", dir: "asc" };
   const mapaOrdenacaoCabecalho = {
-    "OBRA": "obra", "CLIENTE": "cliente", "VALOR": "valor", "PREÇO": "valor",
-    "ITEM": "itemGeral", "CATEGORIA": "categoriaGeral", "CATEG. / SEGMENTO": "categoriaGeral",
-    "STATUS DO PRAZO": "prazo", "STATUS DE COMPRAS": "compras", "FATUR.": "fatur",
-    "ABERTURA": "abertura", "STATUS": "status", "RESPONSÁVEL": "responsavel",
-    "COMPLEX.": "complexidade", "UF": "uf", "ETAPA": "etapa", "NF": "nf"
+    "OBRA": "obra",
+    "CLIENTE": "cliente",
+    "VALOR": "valor", "PREÇO": "valor",
+    "ITEM": "itemGeral",
+    "CATEGORIA": "categoriaGeral", "CATEG. / SEGMENTO": "categoriaGeral",
+    "STATUS DO PRAZO": "prazo",
+    "STATUS DE COMPRAS": "compras",
+    "FATUR.": "fatur",
+    "ABERTURA": "abertura",
+    "STATUS": "status",
+    "RESPONSÁVEL": "responsavel",
+    "COMPLEX.": "complexidade",
+    "UF": "uf",
+    "ETAPA": "etapa",
+    "NF": "nf"
   };
   
   let modalUI; let modalResumoUI; let modalCompraUI; let modalPendenciaUI; let modalObraEl;
@@ -387,7 +397,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (estadoOrdenacao.key === chave) {
       estadoOrdenacao.dir = estadoOrdenacao.dir === 'asc' ? 'desc' : 'asc';
     } else {
-      estadoOrdenacao = { key: chave, dir: (chave === 'cliente' || chave === 'obra') ? 'asc' : 'desc' };
+      estadoOrdenacao = { key: chave, dir: chave === 'cliente' ? 'asc' : 'desc' };
     }
     renderizar(dadosLocais.slice(1));
   }
@@ -519,79 +529,33 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     modalResumoUI.show();
   }
 
-  // ==== MOTOR DE RENDERIZAÇÃO BLINDADO (PC vs MOBILE) ====
-  function renderizar(dados) {
+  function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
-    const isMobileView = window.innerWidth <= 768;
-    const dadosOrdenados = ordenarDados(dados);
+    const mobileContainer = document.getElementById('mobileCardsContainer');
 
+    const dados = dadosOriginais.filter(d => {
+      if (currentStatusFilter === 'TODAS') return true;
+      return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
+    });
+
+    const dadosOrdenados = ordenarDados(dados);
+    const isGeralView = currentStatusFilter !== 'FIRMADAS';
+    
     let html = "";
+    let htmlMobile = ""; // Variável paralela para o Mobile
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
+    
+    const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
-    if (isMobileView) {
-      // ---- RENDERIZAÇÃO MOBILE (NOVO LAYOUT DE CARTÕES) ----
-      head.innerHTML = ""; // Esconde o cabeçalho da tabela no celular
-
-      dadosOrdenados.forEach(dO => {
-        const r = Array.isArray(dO.content) ? dO.content : [];
-        const val = parseMoneyFlexible(r[COLS.VALOR]);
-        const res = calcularPorcentagem(r);
-        const resCompras = calcularStatusComprasVirtual(r);
-        totVal += val;
-
-        if (res.atraso && res.atrasoDias > maiorAtraso.valor) {
-          maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
-        }
-
-        html += `<tr class="block w-full bg-transparent border-0 mb-3">`;
-        html += `<td class="block w-full p-0 bg-transparent border-0">`;
-        
-        // Estrutura exata pedida para o Cartão Mobile
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col w-full box-border active:scale-[0.98] transition-transform cursor-pointer">`;
-        
-        // Linha 1: (icone) 26.001 | R$ 381.999
-        html += `  <div class="flex justify-between items-center w-full mb-3">`;
-        html += `    <div class="flex items-center gap-2 min-w-0">`;
-        html += `      <div class="w-8 h-8 rounded border border-blue-100 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">`;
-        html += `        <i class="bi bi-journal-text text-lg"></i>`;
-        html += `      </div>`;
-        html += `      <span class="font-black text-slate-900 text-xl truncate">${r[COLS.OBRA] || "-"}</span>`;
-        html += `    </div>`;
-        html += `    <span class="font-black text-blue-700 text-lg shrink-0 whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
-        html += `  </div>`;
-
-        // Linha 2: Cliente + Item
-        html += `  <div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 mb-3 overflow-hidden">`;
-        html += `    <span class="text-slate-700 text-xs font-bold leading-snug truncate uppercase"><i class="bi bi-person text-slate-400 mr-1"></i>${r[COLS.CLIENTE] || "-"}</span>`;
-        html += `    <span class="text-slate-500 text-[0.7rem] leading-snug truncate"><i class="bi bi-box-seam text-slate-400 mr-1"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
-        html += `  </div>`;
-
-        // Linha 3: Prazo e Compras
-        html += `  <div class="flex justify-between items-center w-full pt-1">`;
-        html += `    <div class="flex flex-col items-start min-w-0">`;
-        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Prazo</span>`;
-        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
-        html += `    </div>`;
-        html += `    <div class="flex flex-col items-end shrink-0">`;
-        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Compras</span>`;
-        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
-        html += `    </div>`;
-        html += `  </div>`;
-
-        html += `</div>`;
-        html += `</td></tr>`;
-      });
-
-    } else {
-      // ---- RENDERIZAÇÃO PC (A VERSÃO CRUA INTACTA QUE VOCÊ ENVIOU) ----
+    if (!isGeralView) {
       const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
       head.innerHTML = "<tr>" + labs.map(l => {
         const chave = mapaOrdenacaoCabecalho[l];
         const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
         return chave
-          ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')" aria-label="Ordenar ${l}"><span>${l}</span>${getSortIcon(l)}</button></th>`
+          ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')"><span>${l}</span>${getSortIcon(l)}</button></th>`
           : `<th><span class="table-head-label">${l}</span></th>`;
       }).join('') + "</tr>";
 
@@ -608,6 +572,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
+        // --- RENDERIZAÇÃO DESKTOP (TABELA) ---
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
@@ -616,6 +581,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
         html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
+
+        // Coletar itens para o Mobile enquanto faz o loop Desktop
+        let miniBadgesMobile = "";
 
         for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
           const c = String(r[j] || "").trim();
@@ -638,33 +606,157 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
           const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
           const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
+          
+          // Inject na Tabela
           html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
+          
+          // Preparar bolinha nativa do Mobile (apenas as que não são N/A para não poluir)
+          if(c !== "N/A" && c !== "") {
+              let mbClass = "mc-chip ";
+              if (c === "OK") mbClass += "mc-ok";
+              else if (c === "?") mbClass += "mc-qm";
+              else if (isStatusDate(c)) mbClass += "mc-dt";
+              
+              miniBadgesMobile += `<div class="${mbClass}"><span class="mc-chip-lbl">${nomeItem}</span><span class="mc-chip-val">${conteudoCelula}</span></div>`;
+          }
         }
 
         const obs = r[COLS.OBS] || "";
         html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
         html += `</tr>`;
+
+        // --- RENDERIZAÇÃO MOBILE (CARTÃO FIRMADAS) ---
+        htmlMobile += `
+        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+            <div class="mc-header">
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${r[COLS.OBRA] || ""}</span>
+                </div>
+                <span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span>
+            </div>
+            <div class="mc-body">
+                <div class="mc-client text-truncate">${r[COLS.CLIENTE] || "Cliente não informado"}</div>
+                <div class="mc-category text-truncate">${r[COLS.CATEGORIA_GERAL] || "-"}</div>
+                
+                <div class="mc-kpi-grid mt-2">
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Compras</span>
+                        <span class="mc-kpi-val ${resCompras.valor >= 100 ? "text-success" : "text-warning"}">${resCompras.texto}</span>
+                    </div>
+                </div>
+            </div>
+            ${miniBadgesMobile ? `<div class="mc-footer-scroll"><div class="mc-chips-container">${miniBadgesMobile}</div></div>` : ''}
+        </div>
+        `;
+      });
+
+    } else {
+      const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
+      const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
+      if (isFrustrada) labs.push("DATA FRUSTRADA");
+
+      head.innerHTML = "<tr>" + labs.map(l => {
+        const chave = mapaOrdenacaoCabecalho[l];
+        const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
+        return chave
+          ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')"><span>${l}</span>${getSortIcon(l)}</button></th>`
+          : `<th><span class="table-head-label">${l}</span></th>`;
+      }).join('') + "</tr>";
+
+      dadosOrdenados.forEach(dO => {
+        const r = Array.isArray(dO.content) ? dO.content : [];
+        const val = parseMoneyFlexible(r[COLS.VALOR]);
+        totVal += val;
+        
+        const pctOrcado = totalOrcadoGeral > 0 ? ((val / totalOrcadoGeral) * 100).toFixed(1) + "%" : "0.0%";
+        
+        let statusBadgeClass = "days-badge shadow-sm ";
+        const stProp = r[COLS.STATUS_PROPOSTA] || "";
+        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
+        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
+        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
+        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
+        else statusBadgeClass += "bg-light text-secondary";
+
+        // --- RENDERIZAÇÃO DESKTOP (TABELA GERAL) ---
+        html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+        html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
+        html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
+        html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
+        html += `<td class="td-read-left"><small class="fw-bold">${r[COLS.CATEGORIA_GERAL] || "-"}</small><br><small class="text-muted">${r[COLS.SEGMENTO] || "-"}</small></td>`;
+        html += `<td>${r[COLS.RESPONSAVEL] || "-"}</td>`;
+        html += `<td>${r[COLS.COMPLEXIDADE] || "-"}</td>`;
+        html += `<td>${r[COLS.UF] || "-"}</td>`;
+        html += `<td><div class="text-truncate" style="max-width:120px" title="${r[COLS.ETAPA]}">${r[COLS.ETAPA] || "-"}</div></td>`;
+        html += `<td>${r[COLS.DIAS_PRAZO] || "-"}</td>`;
+        html += `<td>${r[COLS.NF] || "-"}</td>`;
+        html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
+        html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
+        
+        if (isFrustrada) {
+          html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
+        }
+        html += `</tr>`;
+
+        // --- RENDERIZAÇÃO MOBILE (CARTÃO GERAL) ---
+        htmlMobile += `
+        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+            <div class="mc-header">
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${r[COLS.OBRA] || ""}</span>
+                </div>
+                <span class="${statusBadgeClass}">${stProp || "-"}</span>
+            </div>
+            <div class="mc-body">
+                <div class="mc-client text-truncate">${r[COLS.CLIENTE] || "Cliente não informado"}</div>
+                
+                <div class="mc-kpi-grid mt-2">
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Abertura</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
+                    <div class="mc-kpi" style="grid-column: span 2;">
+                        <span class="mc-kpi-lbl">Etapa / Resp.</span>
+                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;">${r[COLS.ETAPA] || "-"} • ${r[COLS.RESPONSAVEL] || "-"}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
       });
     }
 
     if (dados.length === 0) {
-      const colSpan = isMobileView ? 1 : 20;
-      body.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhuma obra encontrada.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhum registro encontrado nesta visualização.</td></tr>`;
+      mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
     } else {
+      // Atualiza Tabela PC
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
       body.classList.add('animate-fade-up');
-      
-      requestAnimationFrame(() => {
-        body.innerHTML = html;
-      });
+      requestAnimationFrame(() => { body.innerHTML = html; });
+
+      // Atualiza Cartões Mobile
+      mobileContainer.innerHTML = htmlMobile;
     }
 
     const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
     document.getElementById('resumoObras').innerText = dados.length;
     document.getElementById('resumoValor').innerText = formatMoneyBR(totVal);
     document.getElementById('resumoCustoMedio').innerText = formatMoneyBR(custoMedio);
-    document.getElementById('resumoProxima').innerText = maiorAtraso.texto;
+    document.getElementById('resumoProxima').innerText = currentStatusFilter === 'FIRMADAS' ? maiorAtraso.texto : '-';
   }
 
   function carregarGrade() {
@@ -818,7 +910,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function carregar() {
-    document.getElementById('tabBody').innerHTML = `<tr><td colspan="100%" class="text-center py-5 text-muted border-0 bg-transparent"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
+    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
+    document.getElementById('mobileCardsContainer').innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando...</span></div>`;
     
     callServer('sincronizarEFetch', [], data => {
       if (!Array.isArray(data) || data.length === 0) { 
@@ -832,7 +925,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       if (msg === "motorbackend.js ausente.") return;
       notify("Erro de Conexão");
       document.getElementById('tabBody').innerHTML = `
-        <tr><td colspan="100%" class="text-center py-10 text-danger border-0 bg-transparent">
+        <tr><td colspan="20" class="text-center py-5 text-danger">
           <i class="bi bi-database-x me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
           <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
           <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
@@ -841,6 +934,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           </span><br>
         </td></tr>
       `;
+      document.getElementById('mobileCardsContainer').innerHTML = `<div class="text-center py-5 text-danger"><i class="bi bi-database-x mb-2" style="font-size: 2.5rem;"></i><br>Erro de Conexão.</div>`;
     });
   }
 
@@ -1162,7 +1256,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (comprasCriticas.length) { linhas.push(`• Compras mais críticas: ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(', ')}`); }
     if (proximosEventos.length) { linhas.push(`• Próximos vencimentos / entregas:`); proximosEventos.forEach(ev => linhas.push(`  - ${ev.obra} • ${ev.item}: ${normalizarDataTexto(ev.texto)}`)); } else { linhas.push(`• Não há vencimentos ou entregas futuras registradas.`); } linhas.push('');
     
-    const leitura = atrasos.length ? `Prioridade do dia: atacar primeiro as obras ${atrasos.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')} por risco de prazo.` : comprasCriticas.length ? `Prioridade do dia: regularizar compras das obras ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')}.` : `Cenário controlado: mantener acompanhamento das compras e dos próximos vencimentos.`;
+    const leitura = atrasos.length ? `Prioridade do dia: atacar primeiro as obras ${atrasos.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')} por risco de prazo.` : comprasCriticas.length ? `Prioridade do dia: regularizar compras das obras ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')}.` : `Cenário controlado: manter acompanhamento das compras e dos próximos vencimentos.`;
     linhas.push(`🧠 *Leitura geral*`); linhas.push(leitura); return linhas.join('\n');
   }
 
@@ -1331,170 +1425,46 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function abrirJanelaPDF(titulo, conteudoHtml) {
     try {
-      const htmlDoc = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${titulo}</title><style>*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:28px;background:#f8fafc;color:#0f172a}.page{max-width:980px;margin:0 auto}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px}h1{font-size:26px;margin:0 0 6px;color:#0b3055}.subtitle{color:#64748b;font-size:13px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.chip{padding:8px 12px;border:1px solid #dbe4ee;border-radius:999px;font-size:12px;color:#475569;background:#fff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.mini-card,.section{background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.05)}.mini-card{padding:16px 18px}.mini-label{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;font-weight:700}.mini-value{font-size:26px;font-weight:800;color:#0f172a;margin-top:6px}.section{padding:18px 20px;margin-top:16px}.section h2{font-size:16px;color:#16314f;margin:0 0 12px}.lead{white-space:pre-line;line-height:1.62;color:#334155}.bar-wrap{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:12px}.bar{height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#16a34a)}.event-list{margin:0;padding-left:18px}.event-list li{margin:0 0 8px}.split{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#0b3055;color:#fff;text-align:left;padding:10px 12px;font-size:12px}td{padding:10px 12px;border-bottom:1px solid #e2e8f0;background:#fff}.tag{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid #dbe4ee;font-weight:700;font-size:12px}.ok{color:#16a34a;border-color:#b7e4c7;background:#f3fbf6}.warn{color:#d97706;border-color:#f9d48b;background:#fffbeb}.bad{color:#dc2626;border-color:#fecaca;background:#fef2f2}.print-btn{border:0;background:#0b3055;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}@media print{body{padding:0;background:#fff}.print-only-hide{display:none}.section,.mini-card{box-shadow:none}}@media (max-width:900px){.grid,.split{grid-template-columns:1fr}}</style></head><body><div class="page"><div class="topbar"><div><h1>${titulo}</h1><div class="subtitle">Relatório gerado pelo painel de gestão de obras.</div><div class="meta"><span class="chip">Gerado em ${new Date().toLocaleDateString('pt-BR')}</span><span class="chip">Visão executiva</span></div></div><button class="print-btn print-only-hide" onclick="window.print()">Salvar / Imprimir PDF</button></div>${conteudoHtml}</div></body></html>`;
-      const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const janela = window.open(url, '_blank');
-      if (!janela) {
-        URL.revokeObjectURL(url);
-        notify('Libere pop-ups para extrair o relatório em PDF.');
-        return;
-      }
-      janela.focus();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    } catch (e) {
-      console.error(e);
-      notify('Não foi possível gerar o PDF. Tente novamente.');
-    }
+      const htmlDoc = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${titulo}</title><style>*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;margin:0;padding:28px;background:#f8fafc;color:#0f172a}.page{max-width:980px;margin:0 auto}.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px}h1{font-size:26px;margin:0 0 6px;color:#0b3055}.subtitle{color:#64748b;font-size:13px}.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.chip{padding:8px 12px;border:1px solid #dbe4ee;border-radius:999px;font-size:12px;color:#475569;background:#fff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.mini-card,.section{background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 12px 30px rgba(15,23,42,.05)}.mini-card{padding:16px 18px}.mini-label{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;font-weight:700}.mini-value{font-size:26px;font-weight:800;color:#0f172a;margin-top:6px}.section{padding:18px 20px;margin-top:16px}.section h2{font-size:16px;color:#16314f;margin:0 0 12px}.lead{white-space:pre-line;line-height:1.62;color:#334155}.bar-wrap{height:12px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:12px}.bar{height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#16a34a)}.event-list{margin:0;padding-left:18px}.event-list li{margin:0 0 8px}.split{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}table{width:100%;border-collapse:collapse;font-size:14px}th{background:#0b3055;color:#fff;text-align:left;padding:10px 12px;font-size:12px}td{padding:10px 12px;border-bottom:1px solid #e2e8f0;background:#fff}.tag{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid #dbe4ee;font-weight:700;font-size:12px}.ok{color:#16a34a;border-color:#b7e4c7;background:#f3fbf6}.warn{color:#d97706;border-color:#f9d48b;background:#fffbeb}.bad{color:#dc2626;border-color:#fecaca;background:#fef2f2}.print-btn{border:0;background:#0b3055;color:#fff;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}@media print{body{padding:0;background:#fff}.print-only-hide{display:none}.section,.mini-card{box-shadow:none}}@media (max-width:900px){.grid,.split{grid-template-columns:1fr}}</style></head><body><div class="page"><div class="topbar"><div><h1>${titulo}</h1><div class="subtitle">Relatório da visualização atual do sistema.</div><div class="meta"><span class="chip">Gerado em ${new Date().toLocaleDateString('pt-BR')}</span><span class="chip">${currentStatusFilter}</span></div></div><button class="print-btn print-only-hide" onclick="window.print()">Salvar / Imprimir PDF</button></div>${conteudoHtml}</div></body></html>`;
+      const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const janela = window.open(url, '_blank');
+      if (!janela) { URL.revokeObjectURL(url); notify('Libere pop-ups para extrair o relatório em PDF.'); return; }
+      janela.focus(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { console.error(e); notify('Não foi possível gerar o PDF. Tente novamente.'); }
   }
 
-  function buildBar(value, max=100) {
-    const pct = Math.max(0, Math.min(100, Number(value) || 0));
-    return `<div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>`;
-  }
+  function buildBar(value) { const pct = Math.max(0, Math.min(100, Number(value) || 0)); return `<div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>`; }
 
   function exportarRelatorioPDF(tipo, obra) {
     try {
       fecharMenuExtracao();
-      if (!obterObrasAtivas().length) {
-        notify('Carregue as obras antes de extrair o PDF.');
-        return;
-      }
-
-      if (!tipo) {
-        abrirModalExtracao('pdf');
-        return;
-      }
+      if (!obterObrasAtivas().length) { notify('Carregue os dados antes de extrair o PDF.'); return; }
+      if (!tipo) { abrirModalExtracao('pdf'); return; }
 
       if (tipo === 'obra') {
-        const info = obterMetricasObraRelatorio(obra);
-        if (!info) {
-          notify('Obra não encontrada para exportar em PDF.');
-          return;
-        }
-        const { r, prazo, compras, eventos } = info;
-        const comprasTotal = calcularTotalComprasDaObra(r);
+        const info = obterMetricasObraRelatorio(obra); if (!info) { notify('Obra não encontrada para exportar em PDF.'); return; }
+        const { r, prazo, compras, eventos } = info; const comprasTotal = calcularTotalComprasDaObra(r);
         const usoCompras = Math.min(100, parseMoneyFlexible(r[COLS.CPMV]) > 0 ? (comprasTotal / parseMoneyFlexible(r[COLS.CPMV])) * 100 : 0);
-        const html = `
-          <div class="grid">
-            <div class="mini-card"><div class="mini-label">Obra</div><div class="mini-value">${r[COLS.OBRA] || '-'}</div></div>
-            <div class="mini-card"><div class="mini-label">Cliente</div><div class="mini-value" style="font-size:22px">${r[COLS.CLIENTE] || '-'}</div></div>
-            <div class="mini-card"><div class="mini-label">Valor</div><div class="mini-value">R$ ${formatMoneyBR(r[COLS.VALOR])}</div></div>
-          </div>
-          <div class="split">
-            <div class="section">
-              <h2>Resumo executivo</h2>
-              <div class="lead">${obterTextoWhatsAppObra(r[COLS.OBRA]).replace(/\n/g,'<br>')}</div>
-            </div>
-            <div class="section">
-              <h2>Painel rápido</h2>
-              <p><span class="tag ${prazo.atraso ? 'bad' : 'ok'}">${prazo.texto}</span></p>
-              <p><span class="tag ${compras.valor < 100 ? 'warn' : 'ok'}">${compras.texto}</span></p>
-              <p><strong>CPMV:</strong> R$ ${formatMoneyBR(r[COLS.CPMV])}</p>
-              <p><strong>Compras registradas:</strong> R$ ${formatMoneyBR(comprasTotal)}</p>
-              <p><strong>Uso do CPMV:</strong> ${usoCompras.toFixed(1)}%</p>
-              ${buildBar(usoCompras)}
-            </div>
-          </div>
-          <div class="section">
-            <h2>Próximos eventos da obra</h2>
-            <ul class="event-list">
-              ${eventos.length ? eventos.map(ev => `<li><strong>${ev.item}</strong> • ${normalizarDataTexto(ev.texto)}</li>`).join('') : '<li>Sem eventos futuros registrados.</li>'}
-            </ul>
-          </div>`;
-        abrirJanelaPDF(`Relatório da Obra ${r[COLS.OBRA]}`, html);
-        return;
+        const html = `<div class="grid"><div class="mini-card"><div class="mini-label">Obra</div><div class="mini-value">${r[COLS.OBRA] || '-'}</div></div><div class="mini-card"><div class="mini-label">Cliente</div><div class="mini-value" style="font-size:22px">${r[COLS.CLIENTE] || '-'}</div></div><div class="mini-card"><div class="mini-label">Valor</div><div class="mini-value">R$ ${formatMoneyBR(r[COLS.VALOR])}</div></div></div><div class="split"><div class="section"><h2>Resumo executivo</h2><div class="lead">${obterTextoWhatsAppObra(r[COLS.OBRA]).replace(/\n/g,'<br>')}</div></div><div class="section"><h2>Painel rápido</h2><p><span class="tag ${prazo.atraso ? 'bad' : 'ok'}">${prazo.texto}</span></p><p><span class="tag ${compras.valor < 100 ? 'warn' : 'ok'}">${compras.texto}</span></p><p><strong>CPMV:</strong> R$ ${formatMoneyBR(r[COLS.CPMV])}</p><p><strong>Compras registradas:</strong> R$ ${formatMoneyBR(comprasTotal)}</p><p><strong>Uso do CPMV:</strong> ${usoCompras.toFixed(1)}%</p>${buildBar(usoCompras)}</div></div><div class="section"><h2>Próximos eventos da obra</h2><ul class="event-list">${eventos.length ? eventos.map(ev => `<li><strong>${ev.item}</strong> • ${normalizarDataTexto(ev.texto)}</li>`).join('') : '<li>Sem eventos futuros registrados.</li>'}</ul></div>`;
+        abrirJanelaPDF(`Relatório da Obra ${r[COLS.OBRA]}`, html); return;
       }
 
-      const info = obterMetricasGeraisRelatorio();
-      const totalCompras = info.obras.reduce((acc,row)=>acc + calcularTotalComprasDaObra(row.content),0);
+      const info = obterMetricasGeraisRelatorio(); const totalCompras = info.obras.reduce((acc,row)=>acc + calcularTotalComprasDaObra(row.content),0);
       const usoMedio = info.totalCPMV > 0 ? (totalCompras / info.totalCPMV) * 100 : 0;
-      const html = `
-        <div class="grid">
-          <div class="mini-card"><div class="mini-label">Obras ativas</div><div class="mini-value">${info.obras.length}</div></div>
-          <div class="mini-card"><div class="mini-label">Total em carteira</div><div class="mini-value">R$ ${formatMoneyBR(info.totalCarteira)}</div></div>
-          <div class="mini-card"><div class="mini-label">CPMV médio</div><div class="mini-value">R$ ${formatMoneyBR(info.mediaCPMV)}</div></div>
-        </div>
-        <div class="split">
-          <div class="section">
-            <h2>Resumo executivo</h2>
-            <div class="lead">${obterTextoWhatsAppGeral().replace(/\n/g,'<br>')}</div>
-          </div>
-          <div class="section">
-            <h2>Indicadores visuais</h2>
-            <p><strong>Uso médio do CPMV:</strong> ${usoMedio.toFixed(1)}%</p>
-            ${buildBar(usoMedio)}
-            <p style="margin-top:14px"><strong>Obras com compras pendentes:</strong> ${info.comprasPendentes.length}</p>
-            <p><strong>Obras em atraso:</strong> ${info.atrasos.length}</p>
-            <p><strong>Próximos eventos:</strong> ${info.proximosEventos.length}</p>
-          </div>
-        </div>
-        <div class="section">
-          <h2>Próximos vencimentos e entregas</h2>
-          <ul class="event-list">
-            ${info.proximosEventos.length ? info.proximosEventos.map(ev => `<li><strong>${ev.obra}</strong> • ${ev.item}: ${normalizarDataTexto(ev.texto)}</li>`).join('') : '<li>Sem entregas ou vencimentos futuros registrados.</li>'}
-          </ul>
-        </div>
-        <div class="section">
-          <h2>Obras que pedem atenção</h2>
-          <table>
-            <thead><tr><th>Obra</th><th>Cliente</th><th>Prazo</th><th>Compras</th></tr></thead>
-            <tbody>
-              ${(info.atrasos.length ? info.atrasos.slice(0,6) : info.obras.slice(0,6).map(row => ({row,status:calcularPorcentagem(row.content)}))).map(x => {
-                const compras = calcularStatusComprasVirtual(x.row.content);
-                return `<tr><td>${x.row.content[COLS.OBRA]}</td><td>${x.row.content[COLS.CLIENTE] || '-'}</td><td>${x.status.texto}</td><td>${compras.texto}</td></tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>`;
-      abrirJanelaPDF('Relatório Geral de Obras Ativas', html);
-    } catch (e) {
-      console.error(e);
-      notify('Não foi possível montar o relatório em PDF.');
-    }
-  }
-
-  function setupMobileViewport() {
-    const setVh = () => {
-      const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-    };
-    setVh();
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setVh);
-    } else {
-      window.addEventListener('resize', setVh);
-    }
+      const html = `<div class="grid"><div class="mini-card"><div class="mini-label">Obras Listadas</div><div class="mini-value">${info.obras.length}</div></div><div class="mini-card"><div class="mini-label">Total Exibido</div><div class="mini-value">R$ ${formatMoneyBR(info.totalCarteira)}</div></div><div class="mini-card"><div class="mini-label">CPMV médio</div><div class="mini-value">R$ ${formatMoneyBR(info.mediaCPMV)}</div></div></div><div class="split"><div class="section"><h2>Resumo executivo</h2><div class="lead">${obterTextoWhatsAppGeral().replace(/\n/g,'<br>')}</div></div><div class="section"><h2>Indicadores visuais</h2><p><strong>Uso médio do CPMV:</strong> ${usoMedio.toFixed(1)}%</p>${buildBar(usoMedio)}<p style="margin-top:14px"><strong>Obras com compras pendentes:</strong> ${info.comprasPendentes.length}</p><p><strong>Obras em atraso:</strong> ${info.atrasos.length}</p><p><strong>Próximos eventos:</strong> ${info.proximosEventos.length}</p></div></div><div class="section"><h2>Próximos vencimentos e entregas</h2><ul class="event-list">${info.proximosEventos.length ? info.proximosEventos.map(ev => `<li><strong>${ev.obra}</strong> • ${ev.item}: ${normalizarDataTexto(ev.texto)}</li>`).join('') : '<li>Sem entregas ou vencimentos futuros registrados.</li>'}</ul></div><div class="section"><h2>Obras que pedem atenção</h2><table><thead><tr><th>Obra</th><th>Cliente</th><th>Prazo</th><th>Compras</th></tr></thead><tbody>${(info.atrasos.length ? info.atrasos.slice(0,6) : info.obras.slice(0,6).map(row => ({row,status:calcularPorcentagem(row.content)}))).map(x => { const compras = calcularStatusComprasVirtual(x.row.content); return `<tr><td>${x.row.content[COLS.OBRA]}</td><td>${x.row.content[COLS.CLIENTE] || '-'}</td><td>${x.status.texto}</td><td>${compras.texto}</td></tr>`; }).join('')}</tbody></table></div>`;
+      abrirJanelaPDF(`Relatório Geral (${currentStatusFilter})`, html);
+    } catch (e) { console.error(e); notify('Não foi possível montar o relatório em PDF.'); }
   }
 
   function ajustarRolagemDaTabela() {
-    const viewport = document.querySelector('.table-viewport');
-    if (!viewport) return;
-
-    const viewportTop = viewport.getBoundingClientRect().top;
-    const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const margemInferior = window.innerWidth <= 768 ? 20 : 40; 
-    const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
-
-    viewport.style.maxHeight = `${alturaDisponivel}px`;
-    viewport.classList.add('table-scroll-locked');
+    const viewport = document.querySelector('.table-viewport'); if (!viewport) return;
+    const viewportTop = viewport.getBoundingClientRect().top; const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const margemInferior = window.innerWidth <= 768 ? 32 : 40; const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
+    viewport.style.maxHeight = `${alturaDisponivel}px`; viewport.classList.add('table-scroll-locked');
   }
 
-  window.addEventListener('resize', () => {
-    const isMobileView = window.innerWidth <= 768;
-    const estavaMobile = viewportIsMobile;
-    
-    if (isMobileView !== estavaMobile) {
-      viewportIsMobile = isMobileView;
-      if (dadosLocais.length > 0) renderizar(dadosLocais.slice(1));
-    }
-    ajustarRolagemDaTabela();
-  });
-
-  let viewportIsMobile = window.innerWidth <= 768;
+  window.addEventListener('resize', ajustarRolagemDaTabela);
 
   window.onload = () => { 
-    setupMobileViewport();
     initModais();
     configurarCabecalhoData();
     carregarGrade();
