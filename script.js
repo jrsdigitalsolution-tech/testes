@@ -712,17 +712,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         }
         html += `</tr>`;
 
-        // CARTÃO MOBILE - GERAL (Com Item ao invés de Etapa/Resp)
-        
-        // 1. Extração segura das 3 primeiras palavras do Item
-        let itemStr = String(r[COLS.ITEM_GERAL] || "").trim();
-        let itemDisplay = "-";
-        if (itemStr) {
-            let words = itemStr.split(/\s+/);
-            itemDisplay = words.length > 3 ? words.slice(0, 3).join(" ") + "..." : itemStr;
-        }
-
-        // 2. Montagem do Cartão. Note que incluí a "Categoria" para ficar bonito e padronizado como o de FIRMADAS
+        // CARTÃO MOBILE - GERAL (Restaurado com Etapa/Resp)
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
@@ -734,7 +724,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
             </div>
             <div class="mc-body">
                 <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
-                <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
@@ -746,8 +735,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                         <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
                     </div>
                     <div class="mc-kpi" style="grid-column: span 2;">
-                        <span class="mc-kpi-lbl">Item</span>
-                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemStr)}">${escapeHtml(itemDisplay)}</span>
+                        <span class="mc-kpi-lbl">Etapa / Resp.</span>
+                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;">${escapeHtml(r[COLS.ETAPA] || "-")} • ${escapeHtml(r[COLS.RESPONSAVEL] || "-")}</span>
                     </div>
                 </div>
             </div>
@@ -870,7 +859,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (inputForn) inputForn.value = document.getElementById(`${id}_forn_val`).value;
     if (inputOc) inputOc.value = document.getElementById(`${id}_oc_val`).value;
     
-    // Mostra o valor limpo sem cêntimos infinitos no modal
     const vRaw = document.getElementById(`${id}_valor_val`).value;
     if (inputValor) inputValor.value = (vRaw !== "" && vRaw !== null) ? parseMoneyFlexible(vRaw).toFixed(2).replace('.00', '') : "";
     
@@ -1005,7 +993,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     try {
       atualizarFaturamentoPrevistoFormulario();
       
-      // Limpa os valores monetários antes de salvar para o banco ficar perfeito
       const valorLimpo = document.getElementById('valor').value !== "" ? String(parseMoneyFlexible(document.getElementById('valor').value)) : "";
       
       const obj = { 
@@ -1045,7 +1032,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     document.getElementById('obra').value = r[COLS.OBRA] || "";
     document.getElementById('cliente').value = r[COLS.CLIENTE] || ""; 
     
-    // Coloca os números visualmente limpos nos inputs de edição, tirando ".000000" do banco
     const rawValor = r[COLS.VALOR];
     document.getElementById('valor').value = (rawValor !== "" && rawValor !== null) ? parseMoneyFlexible(rawValor).toFixed(2).replace('.00', '') : "";
     
