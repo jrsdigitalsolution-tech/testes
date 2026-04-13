@@ -29,30 +29,34 @@
       </div>
     </div> 
 
-    <div class="nav-actions">
-      <button id="btnRefresh" type="button" class="btn-refresh-modern" onclick="acionarAtualizacao(this)" aria-label="Atualizar"><i class="bi bi-arrow-repeat"></i></button>
+ <div class="nav-actions">
+      <!-- ÍCONE 1: Analítico -->
+      <button type="button" class="btn-extract-modern" onclick="showAnalyticsSoon()" aria-label="Analítico">
+        <i class="bi bi-bar-chart-line"></i>
+      </button>
+
+      <!-- ÍCONE 2: Extrair Relatórios -->
       <div class="export-menu-wrap">
-        <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios"><i class="bi bi-send-plus"></i></button>
+        <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios">
+          <i class="bi bi-send-plus"></i>
+        </button>
         <div id="menuExtracao" class="extract-menu-panel">
           <button type="button" class="extract-menu-btn" onclick="gerarResumoWhatsApp('geral')">
             <i class="bi bi-whatsapp"></i>
-            <span><strong>Resumo WhatsApp geral</strong><small>Panorama da visualização atual da tabela.</small></span>
+            <span><strong>Resumo WhatsApp geral</strong><small>Panorama das obras ativas, carteira, CPMV médio, prazos, compras e próximos vencimentos.</small></span>
           </button>
           <button type="button" class="extract-menu-btn" onclick="abrirModalExtracao('whatsapp-obra')">
             <i class="bi bi-building-check"></i>
-            <span><strong>Resumo WhatsApp por obra</strong><small>Gera um texto pronto com análise de uma obra específica.</small></span>
+            <span><strong>Resumo WhatsApp por obra</strong><small>Gera um texto pronto com análise de uma obra específica para enviar rapidamente.</small></span>
           </button>
           <div class="extract-menu-divider"></div>
           <button type="button" class="extract-menu-btn" onclick="abrirModalExtracao('pdf')">
             <i class="bi bi-file-earmark-pdf"></i>
-            <span><strong>Extrair em PDF</strong><small>Abre um relatório formatado da visualização atual.</small></span>
+            <span><strong>Extrair em PDF</strong><small>Abre um relatório formatado para salvar ou imprimir em PDF.</small></span>
           </button>
         </div>
       </div>
-      <button class="btn-add-pwa ms-2" onclick="abrirNovo()" aria-label="Nova Obra"><i class="bi bi-plus"></i></button>
     </div>
-  </nav>
-
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-icon icon-obras"><i class="bi bi-buildings-fill"></i></div><div class="stat-content"><p class="stat-label">Obras Exibidas</p><h3 id="resumoObras" class="stat-val">0</h3></div></div>
     <div class="stat-card"><div class="stat-icon icon-valor"><i class="bi bi-currency-dollar"></i></div><div class="stat-content"><p class="stat-label">Valor Exibido</p><h3 id="resumoValor" class="stat-val">0</h3></div></div>
