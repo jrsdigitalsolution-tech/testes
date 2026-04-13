@@ -62,6 +62,8 @@
   </div>
 
   <div class="filter-wrapper-header">
+    
+    <!-- MENU DE ABAS INTACTO (SÓ APARECE NO PC) -->
     <div class="status-filters desktop-only" id="filterContainer">
       <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
       <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
@@ -71,11 +73,11 @@
       <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
     </div>
 
-    <!-- LISTA SUSPENSA EXCLUSIVA PARA CELULAR -->
-    <div class="mobile-only w-full">
+    <!-- LISTA SUSPENSA EXCLUSIVA (SÓ APARECE NO CELULAR) -->
+    <div class="mobile-only w-full mb-1 px-3">
       <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-200 w-full box-border">
         <span class="text-[0.75rem] font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5"><i class="bi bi-funnel"></i> Status</span>
-        <select id="mobileStatusFilter" class="bg-slate-50 border border-slate-200 text-slate-700 text-[0.8rem] font-bold rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary w-full max-w-[180px]" onchange="setFilter(this.value)">
+        <select id="mobileStatusFilter" class="bg-slate-50 border border-slate-200 text-slate-700 text-[0.8rem] font-bold rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary w-full max-w-[150px]" onchange="setFilter(this.value)">
           <option value="FIRMADAS" selected>Firmadas</option>
           <option value="TODAS">Todas</option>
           <option value="ENVIADAS">Enviadas</option>
@@ -227,7 +229,7 @@
         <div class="extract-choice-grid" id="blocoTipoExtracao">
           <button type="button" class="extract-choice-card" id="btnExtracaoGeral" onclick="selecionarTipoExtracao('geral')">
             <i class="bi bi-grid-1x2"></i>
-            <span><strong>Visão geral</strong><small>Todas as obras ativas em um só resumo.</small></span>
+            <span><strong>Visão atual</strong><small>Resumo baseado no filtro selecionado.</small></span>
           </button>
           <button type="button" class="extract-choice-card" id="btnExtracaoObra" onclick="selecionarTipoExtracao('obra')">
             <i class="bi bi-buildings"></i>
