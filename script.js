@@ -519,28 +519,20 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     modalResumoUI.show();
   }
 
-  // ==== MOTOR DE RENDERIZAÇÃO INTELIGENTE (PC vs MOBILE APP) ====
-  function renderizar(dadosOriginais) {
+  // ==== MOTOR DE RENDERIZAÇÃO BLINDADO (PC vs MOBILE) ====
+  function renderizar(dados) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
-
-    const dados = dadosOriginais.filter(d => {
-      if (currentStatusFilter === 'TODAS') return true;
-      return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
-    });
-
+    const isMobileView = window.innerWidth <= 768;
     const dadosOrdenados = ordenarDados(dados);
-    const isMobileView = window.innerWidth <= 768; 
-    const isGeralView = currentStatusFilter !== 'FIRMADAS';
-    
+
     let html = "";
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
-    const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO MOBILE (CARDS COM BLOCK RIGOROSO) ====
-      head.innerHTML = ``; // Esconde o cabeçalho no celular
+      // ---- RENDERIZAÇÃO MOBILE (NOVO LAYOUT DE CARTÕES) ----
+      head.innerHTML = ""; // Esconde o cabeçalho da tabela no celular
 
       dadosOrdenados.forEach(dO => {
         const r = Array.isArray(dO.content) ? dO.content : [];
@@ -549,61 +541,43 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         const resCompras = calcularStatusComprasVirtual(r);
         totVal += val;
 
-        if (res.atraso && res.atrasoDias > maiorAtraso.valor) maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
-
-        html += `<tr class="block w-full border-0 p-0 m-0 bg-transparent">`;
-        html += `<td class="block w-full p-0 border-0 bg-transparent">`;
-        
-        // O Cartão Mobile: Bloqueio de Vazamento de Tela absoluto
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full box-border flex flex-col mb-3 active:scale-[0.98] transition-transform cursor-pointer">`;
-        
-        // 1. LINHA 1: Obra (Esquerda) e Valor (Direita)
-        html += `  <div class="flex justify-between items-center w-full mb-3">`;
-        html += `    <div class="flex items-center gap-2">`; 
-        html += `      <i class="bi bi-journal-text text-blue-600 text-xl"></i>`;
-        html += `      <span class="font-black text-slate-900 text-xl">${r[COLS.OBRA] || "-"}</span>`;
-        html += `    </div>`;
-        html += `    <span class="font-black text-blue-700 text-lg whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
-        html += `  </div>`;
-
-        // 2. LINHA 2: Cliente + Item 
-        html += `  <div class="bg-slate-50 p-2 rounded border border-slate-100 mb-3 w-full overflow-hidden">`;
-        html += `    <div class="text-slate-700 text-xs font-bold uppercase truncate mb-1"><i class="bi bi-person text-slate-400 mr-1"></i>${r[COLS.CLIENTE] || "-"}</div>`;
-        html += `    <div class="text-slate-500 text-xs truncate"><i class="bi bi-box-seam text-slate-400 mr-1"></i>${r[COLS.ITEM_GERAL] || "-"}</div>`;
-        html += `  </div>`;
-
-        // 3. LINHA 3: Prazo (Esquerda) e Compras (Direita)
-        html += `  <div class="flex justify-between items-center w-full pt-1">`;
-        
-        if (isGeralView) {
-            let statusBadgeClass = "days-badge shadow-sm ";
-            const stProp = r[COLS.STATUS_PROPOSTA] || "";
-            if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
-            else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
-            else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
-            else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
-            else statusBadgeClass += "bg-light text-secondary";
-
-            html += `    <div class="flex flex-col items-start">`;
-            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Status</span>`;
-            html += `      <span class="${statusBadgeClass} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center">${stProp || "-"}</span>`;
-            html += `    </div>`;
-            html += `    <div class="flex flex-col items-end">`;
-            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Prazo</span>`;
-            const prazoEx = isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-");
-            html += `      <span class="text-slate-700 text-sm font-bold">${prazoEx}</span>`;
-            html += `    </div>`;
-        } else {
-            html += `    <div class="flex flex-col items-start">`;
-            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Prazo</span>`;
-            html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${res.texto}</span>`;
-            html += `    </div>`;
-            html += `    <div class="flex flex-col items-end">`;
-            html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase mb-0.5">Compras</span>`;
-            html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-2 py-1 rounded font-black uppercase text-center shadow-sm">${resCompras.texto}</span>`;
-            html += `    </div>`;
+        if (res.atraso && res.atrasoDias > maiorAtraso.valor) {
+          maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
         }
+
+        html += `<tr class="block w-full bg-transparent border-0 mb-3">`;
+        html += `<td class="block w-full p-0 bg-transparent border-0">`;
         
+        // Estrutura exata pedida para o Cartão Mobile
+        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col w-full box-border active:scale-[0.98] transition-transform cursor-pointer">`;
+        
+        // Linha 1: (icone) 26.001 | R$ 381.999
+        html += `  <div class="flex justify-between items-center w-full mb-3">`;
+        html += `    <div class="flex items-center gap-2 min-w-0">`;
+        html += `      <div class="w-8 h-8 rounded border border-blue-100 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">`;
+        html += `        <i class="bi bi-journal-text text-lg"></i>`;
+        html += `      </div>`;
+        html += `      <span class="font-black text-slate-900 text-xl truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `    </div>`;
+        html += `    <span class="font-black text-blue-700 text-lg shrink-0 whitespace-nowrap">R$ ${formatMoneyBR(val)}</span>`;
+        html += `  </div>`;
+
+        // Linha 2: Cliente + Item
+        html += `  <div class="flex flex-col w-full bg-slate-50 p-2.5 rounded-lg border border-slate-100 gap-1 mb-3 overflow-hidden">`;
+        html += `    <span class="text-slate-700 text-xs font-bold leading-snug truncate uppercase"><i class="bi bi-person text-slate-400 mr-1"></i>${r[COLS.CLIENTE] || "-"}</span>`;
+        html += `    <span class="text-slate-500 text-[0.7rem] leading-snug truncate"><i class="bi bi-box-seam text-slate-400 mr-1"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
+        html += `  </div>`;
+
+        // Linha 3: Prazo e Compras
+        html += `  <div class="flex justify-between items-center w-full pt-1">`;
+        html += `    <div class="flex flex-col items-start min-w-0">`;
+        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Prazo</span>`;
+        html += `      <span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${res.texto}</span>`;
+        html += `    </div>`;
+        html += `    <div class="flex flex-col items-end shrink-0">`;
+        html += `      <span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Compras</span>`;
+        html += `      <span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0 shadow-sm">${resCompras.texto}</span>`;
+        html += `    </div>`;
         html += `  </div>`;
 
         html += `</div>`;
@@ -611,129 +585,86 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       });
 
     } else {
-      // ==== RENDERIZAÇÃO PC (A TABELA ORIGINAL RESTAURADA, INTOCADA) ====
-      if (!isGeralView) {
-        const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
-        head.innerHTML = "<tr>" + labs.map(l => {
-          const chave = mapaOrdenacaoCabecalho[l];
-          const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
-          return chave
-            ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')"><span>${l}</span>${getSortIcon(l)}</button></th>`
-            : `<th><span class="table-head-label">${l}</span></th>`;
-        }).join('') + "</tr>";
+      // ---- RENDERIZAÇÃO PC (A VERSÃO CRUA INTACTA QUE VOCÊ ENVIOU) ----
+      const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
+      head.innerHTML = "<tr>" + labs.map(l => {
+        const chave = mapaOrdenacaoCabecalho[l];
+        const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
+        return chave
+          ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')" aria-label="Ordenar ${l}"><span>${l}</span>${getSortIcon(l)}</button></th>`
+          : `<th><span class="table-head-label">${l}</span></th>`;
+      }).join('') + "</tr>";
 
-        dadosOrdenados.forEach(dO => {
-          const r = Array.isArray(dO.content) ? dO.content : [];
-          const val = parseMoneyFlexible(r[COLS.VALOR]);
-          const res = calcularPorcentagem(r);
-          const resCompras = calcularStatusComprasVirtual(r);
-          totVal += val;
+      dadosOrdenados.forEach(dO => {
+        const r = Array.isArray(dO.content) ? dO.content : [];
+        const val = parseMoneyFlexible(r[COLS.VALOR]);
+        const res = calcularPorcentagem(r);
+        const resCompras = calcularStatusComprasVirtual(r);
+        totVal += val;
 
-          if (res.atraso && res.atrasoDias > maiorAtraso.valor) maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
+        if (res.atraso && res.atrasoDias > maiorAtraso.valor) {
+          maiorAtraso = { texto: res.atrasoDias + "d ATRASO", valor: res.atrasoDias };
+        }
 
-          const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
+        const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-          html += `<tr onclick="editar(${dO.originalIndex})">`;
-          html += `<td>${r[COLS.OBRA] || ""}</td>`;
-          html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
-          html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
-          html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-          html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
-          html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
-          html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
+        html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+        html += `<td>${r[COLS.OBRA] || ""}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
+        html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
+        html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
+        html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
 
-          for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
-            const c = String(r[j] || "").trim();
-            const nomeItem = ITENS[j - COLS.ITEM_INICIO];
-            const sid = getSafeId(nomeItem);
-            const det = detalhesJson[sid] || {};
+        for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
+          const c = String(r[j] || "").trim();
+          const nomeItem = ITENS[j - COLS.ITEM_INICIO];
+          const sid = getSafeId(nomeItem);
+          const det = detalhesJson[sid] || {};
 
-            let cl = "status-pill ";
-            if (c === "OK") cl += "st-ok";
-            else if (c === "N/A") cl += "st-na";
-            else if (c === "?") cl += "st-qm";
-            else if (isStatusDate(c)) cl += "st-dt";
+          let cl = "status-pill ";
+          if (c === "OK") cl += "st-ok";
+          else if (c === "N/A") cl += "st-na";
+          else if (c === "?") cl += "st-qm";
+          else if (isStatusDate(c)) cl += "st-dt";
 
-            let icon = "";
-            if (c === "?") icon = det.alerta_descricao ? '<i class="bi bi-chat-left-text ms-1"></i>' : '';
-            else if (isStatusDate(c) && nomeItem !== "FATUR.") icon = det.pedido ? '<i class="bi bi-truck ms-1"></i>' : '<i class="bi bi-cart-plus ms-1" style="color:red"></i>';
-
-            const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
-            const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
-            html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
+          let icon = "";
+          if (c === "?") {
+            icon = det.alerta_descricao ? '<i class="bi bi-chat-left-text ms-1"></i>' : '';
+          } else if (isStatusDate(c) && nomeItem !== "FATUR.") {
+            icon = det.pedido ? '<i class="bi bi-truck ms-1"></i>' : '<i class="bi bi-cart-plus ms-1" style="color:red"></i>';
           }
 
-          const obs = r[COLS.OBS] || "";
-          html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
-          html += `</tr>`;
-        });
-      } else {
-        const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
-        const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
-        if (isFrustrada) labs.push("DATA FRUSTRADA");
+          const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
+          const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
+          html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
+        }
 
-        head.innerHTML = "<tr>" + labs.map(l => {
-          const chave = mapaOrdenacaoCabecalho[l];
-          const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
-          return chave
-            ? `<th><button type="button" class="table-sort-btn ${ativo}" onclick="event.stopPropagation();toggleOrdenacao('${chave}')"><span>${l}</span>${getSortIcon(l)}</button></th>`
-            : `<th><span class="table-head-label">${l}</span></th>`;
-        }).join('') + "</tr>";
-
-        dadosOrdenados.forEach(dO => {
-          const r = Array.isArray(dO.content) ? dO.content : [];
-          const val = parseMoneyFlexible(r[COLS.VALOR]);
-          totVal += val;
-          
-          const pctOrcado = totalOrcadoGeral > 0 ? ((val / totalOrcadoGeral) * 100).toFixed(1) + "%" : "0.0%";
-          
-          let statusBadgeClass = "days-badge shadow-sm ";
-          const stProp = r[COLS.STATUS_PROPOSTA] || "";
-          if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
-          else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
-          else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
-          else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
-          else statusBadgeClass += "bg-light text-secondary";
-
-          html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
-          html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
-          html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
-          html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
-          html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
-          html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-          html += `<td class="td-read-left"><small class="fw-bold">${r[COLS.CATEGORIA_GERAL] || "-"}</small><br><small class="text-muted">${r[COLS.SEGMENTO] || "-"}</small></td>`;
-          html += `<td>${r[COLS.RESPONSAVEL] || "-"}</td>`;
-          html += `<td>${r[COLS.COMPLEXIDADE] || "-"}</td>`;
-          html += `<td>${r[COLS.UF] || "-"}</td>`;
-          html += `<td><div class="text-truncate" style="max-width:120px" title="${r[COLS.ETAPA]}">${r[COLS.ETAPA] || "-"}</div></td>`;
-          html += `<td>${r[COLS.DIAS_PRAZO] || "-"}</td>`;
-          html += `<td>${r[COLS.NF] || "-"}</td>`;
-          html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
-          html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
-          
-          if (isFrustrada) {
-            html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
-          }
-          html += `</tr>`;
-        });
-      }
-    } 
+        const obs = r[COLS.OBS] || "";
+        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
+        html += `</tr>`;
+      });
+    }
 
     if (dados.length === 0) {
       const colSpan = isMobileView ? 1 : 20;
-      body.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-10 text-slate-400 bg-transparent border-0"><i class="bi bi-folder2-open d-block mb-3 text-4xl"></i><span class="font-bold">Nenhum registro encontrado nesta visualização.</span></td></tr>`;
+      body.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhuma obra encontrada.</td></tr>`;
     } else {
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
       body.classList.add('animate-fade-up');
-      requestAnimationFrame(() => { body.innerHTML = html; });
+      
+      requestAnimationFrame(() => {
+        body.innerHTML = html;
+      });
     }
 
     const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
     document.getElementById('resumoObras').innerText = dados.length;
     document.getElementById('resumoValor').innerText = formatMoneyBR(totVal);
     document.getElementById('resumoCustoMedio').innerText = formatMoneyBR(custoMedio);
-    document.getElementById('resumoProxima').innerText = currentStatusFilter === 'FIRMADAS' ? maiorAtraso.texto : '-';
+    document.getElementById('resumoProxima').innerText = maiorAtraso.texto;
   }
 
   function carregarGrade() {
