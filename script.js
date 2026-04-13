@@ -9,10 +9,21 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function setFilter(status) {
     currentStatusFilter = status;
+    
+    // Sincroniza os botões do PC
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.getAttribute('data-status') === status) {
+        btn.classList.add('active');
+      }
+    });
+    
+    // Sincroniza o select do Mobile
     const selectEl = document.getElementById('statusFilter');
     if (selectEl && selectEl.value !== status) {
       selectEl.value = status;
     }
+    
     renderizar(dadosLocais.slice(1));
   }
 
