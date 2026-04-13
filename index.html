@@ -66,7 +66,18 @@
 </div>
 
 <div class="filter-wrapper-header">
-  <div class="status-select-wrapper shadow-sm">
+  <!-- BOTÕES DESKTOP -->
+  <div class="status-filters d-none d-md-flex" id="filterContainer">
+    <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
+    <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
+    <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
+    <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
+    <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
+    <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
+  </div>
+
+  <!-- DROPDOWN MOBILE -->
+  <div class="status-select-wrapper shadow-sm d-md-none">
     <i class="bi bi-funnel-fill"></i>
     <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
       <option value="FIRMADAS">Firmadas</option>
@@ -77,12 +88,12 @@
       <option value="CONCLUIDAS">Concluídas</option>
     </select>
   </div>
+
   <div class="table-scroll-label d-none d-md-block">Arraste para ver mais →</div>
 </div>
 
-<!-- VISÃO DESKTOP (Tabela Original Intacta) -->
-  <div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
-    <table class="table table-hover mb-0">
+<div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
+  <table class="table table-hover mb-0">
       <thead id="tabHead"></thead>
       <tbody id="tabBody" class="animate-fade-up">
         <tr>
