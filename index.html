@@ -14,7 +14,8 @@
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <link rel="stylesheet" href="style.css">
+  <!-- Adicionado ?v=2 para quebrar o cache do celular -->
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body class="antialiased">
 
@@ -28,7 +29,7 @@
         <span id="txtSemanaAtual" class="week-badge">Semana -</span>
         <span id="txtDataAtual">Carregando...</span>
       </div>
-    </div> <!-- ESTA DIV FOI ADICIONADA: Fecha corretamente o bloco do logotipo e data -->
+    </div>
 
     <div class="nav-actions">
       <!-- Menu de Extração de Relatórios -->
@@ -62,21 +63,24 @@
     <div class="stat-card"><div class="stat-icon icon-valor"><i class="bi bi-currency-dollar"></i></div><div class="stat-content"><p class="stat-label">Valor Exibido</p><h3 id="resumoValor" class="stat-val">0</h3></div></div>
     <div class="stat-card"><div class="stat-icon icon-media"><i class="bi bi-graph-up-arrow"></i></div><div class="stat-content"><p class="stat-label">Valor Médio</p><h3 id="resumoCustoMedio" class="stat-val">0</h3></div></div>
     <div class="stat-card"><div class="stat-icon icon-entrega"><i class="bi bi-truck"></i></div><div class="stat-content"><p class="stat-label">Atraso Crítico</p><h3 id="resumoProxima" class="stat-val">-</h3></div></div>
-  </div>
+</div>
 
-  <div class="filter-wrapper-header">
-    <div class="status-filters" id="filterContainer">
-      <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
-      <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
-      <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
-      <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
-      <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
-      <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
-    </div>
-    <div class="table-scroll-label d-none d-md-block">Arraste para ver mais →</div>
+<div class="filter-wrapper-header">
+  <div class="status-select-wrapper shadow-sm">
+    <i class="bi bi-funnel-fill"></i>
+    <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
+      <option value="FIRMADAS">Firmadas</option>
+      <option value="TODAS">Todas</option>
+      <option value="ENVIADAS">Enviadas</option>
+      <option value="FRUSTRADAS">Frustradas</option>
+      <option value="ENTREGUES">Entregues</option>
+      <option value="CONCLUIDAS">Concluídas</option>
+    </select>
   </div>
+  <div class="table-scroll-label d-none d-md-block">Arraste para ver mais →</div>
+</div>
 
-  <!-- VISÃO DESKTOP (Tabela Original Intacta) -->
+<!-- VISÃO DESKTOP (Tabela Original Intacta) -->
   <div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
     <table class="table table-hover mb-0">
       <thead id="tabHead"></thead>
@@ -252,8 +256,9 @@
 </div>
 
 <script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="motorbackend.js"></script>
-<script src="script.js"></script>
+<!-- Adicionado ?v=2 para forçar o celular a baixar a versão nova do script -->
+<script src="motorbackend.js?v=2"></script>
+<script src="script.js?v=2"></script>
 
 </body>
 </html>
