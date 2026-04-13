@@ -15,6 +15,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         btn.classList.add('active');
       }
     });
+    
+    // Sincroniza a nova lista suspensa do mobile para o status correto
+    const mobileFilter = document.getElementById('mobileStatusFilter');
+    if (mobileFilter && mobileFilter.value !== status) {
+      mobileFilter.value = status;
+    }
+    
     renderizar(dadosLocais.slice(1));
   }
 
