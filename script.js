@@ -822,13 +822,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function atualizarFaturamentoPrevistoFormulario() { const dataPrevista = calcularFaturamentoPrevistoFormulario(); aplicarStatusDataNoFormulario('fatur', dataPrevista); }
 
-  function abrirNovo() { 
-    document.getElementById('formPrincipal').reset(); document.getElementById('data_entrada_orig').value = ""; document.getElementById('cpmv_obra_val').value = "";
-    ITENS.forEach(it => { const id = getSafeId(it); limparCamposDetalhesItem(id); setStatus(id, 'N/A'); });
-    document.getElementById('modalObraTitle').innerText = 'CADASTRO DE OBRA'; document.getElementById('btnFin').style.display = 'none'; document.getElementById('btnGeral').style.display = 'none';
-    atualizarFaturamentoPrevistoFormulario(); recolherTodosItens(); modalUI.show(); 
-  }
-
   function salvar() {
     const btn = document.getElementById('btnSalvar'); if (!btn || btn.disabled) return;
     const erroValidacao = validateFormPrincipal(); if (erroValidacao) { notify(erroValidacao); return; }
