@@ -188,14 +188,14 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
   .status-select-wrapper { display: none !important; }
 }
 @media (max-width: 768px) {
-  .status-filters { display: none !important; }
-  .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; margin-top: 4px; }
+  .table-viewport { margin: 0 14px 20px 14px; }
   
   .modal-xl { max-width: 98vw; }
   #modalObra .modal-body { padding: 1rem; }
-  #modalObra .modal-header { align-items: flex-start; }
-  #modalObra .modal-header .ms-auto { flex-wrap: wrap; justify-content: flex-end; align-items: center; }
-  .modal-top-action i { font-size: 1.45rem; } /* Ícones maiores e mais fáceis de tocar no celular */
+  #modalObra .modal-header { align-items: center; }
+  #modalObra .modal-header .ms-auto { flex-wrap: nowrap !important; justify-content: flex-end; gap: 16px !important; }
+  .modal-top-action span { display: none !important; } /* Esconde o texto APENAS no telemóvel */
+  .modal-top-action i { font-size: 1.5rem; } /* Deixa os ícones perfeitos para toque */
   #modalObra .modal-footer { gap: 10px; }
   #modalObra .modal-footer .btn { flex: 1 1 auto; }
   .material-label { font-size: 0.68rem; }
