@@ -5,8 +5,13 @@
   --border-radius: 8px;
 }
 
-html { scroll-behavior: smooth; overscroll-behavior-y: none; }
-body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; color: #1e293b; margin: 0; overflow-x: hidden; padding-bottom: env(safe-area-inset-bottom, 20px); overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+/* REMOVIDO: overflow-x: hidden e overscroll-behavior-y: none para restaurar navegação fluida nativa no mobile */
+body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; color: #1e293b; margin: 0; padding-bottom: env(safe-area-inset-bottom, 20px); -webkit-text-size-adjust: 100%; }
 
 .btn, .filter-btn, .material-toggle, .mini-status-btn, .modal-top-action, .extract-menu-btn, .stat-card {
   user-select: none;
@@ -355,9 +360,13 @@ body.modal-open { overflow: hidden !important; padding-right: 0 !important; over
 .finance-table-shell tfoot td { position: sticky; bottom: 0; z-index: 1; }
 
 .export-menu-wrap { position: relative; }
+.btn-extract-modern { width: 40px; height: 40px; border: none; background: transparent; color: #5b708b; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; transition: transform 0.2s ease, color 0.2s ease, background 0.2s ease; }
+.btn-extract-modern:hover { color: var(--secondary); background: rgba(0,74,153,0.06); transform: translateY(-1px); }
+.btn-extract-modern:active { transform: scale(0.96); }
+.btn-extract-modern i { font-size: 1.18rem; }
 .extract-menu-panel { position: absolute; top: calc(100% + 10px); right: 0; min-width: 250px; background: rgba(255,255,255,0.98); border: 1px solid #dbe4ee; border-radius: 16px; box-shadow: 0 18px 34px rgba(15,23,42,0.12); padding: 8px; z-index: 1105; opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.98); transition: opacity .18s ease, transform .18s ease, visibility .18s ease; backdrop-filter: blur(12px); }
 .extract-menu-panel.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
-.extract-menu-btn { width: 100%; border: none; background: transparent; text-align: left; border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; color: #243449; transition: background .18s ease, transform .18s ease; touch-action: manipulation; }
+.extract-menu-btn { width: 100%; border: none; background: transparent; text-align: left; border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; color: #243449; transition: background .18s ease, transform .18s ease; }
 .extract-menu-btn:hover { background: #f8fbff; transform: translateX(2px); }
 .extract-menu-btn i { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; background: #eef4fb; color: var(--secondary); }
 .extract-menu-btn strong { display:block; font-size: 0.92rem; font-weight: 800; color: #16314f; }
@@ -404,25 +413,65 @@ body.modal-open { overflow: hidden !important; padding-right: 0 !important; over
   
   .filter-wrapper-header {
     margin-bottom: 0px !important;
-    padding: 0 14px;
+    padding: 0 10px; /* Reduzido para dar mais espaço */
+  }
+  
+  /* RESTAURA NAVEGAÇÃO NATIVA E SUAVE */
+  body, html {
+    overflow-x: visible !important; /* Remover overflow hidden que trava o scroll */
+    overscroll-behavior-y: auto !important; /* Restaura o elástico nativo do iOS/Android */
   }
   
   /* ESTA REGRA IMPEDE OS CARTÕES DE VAZAREM DA TELA NO CELULAR */
   .table-viewport { 
-    margin: 0 14px 20px 14px !important; 
+    margin: 0 10px 20px 10px !important; 
     background: transparent !important; 
     border: none !important; 
     box-shadow: none !important; 
-    overflow-x: hidden !important; 
+    overflow: visible !important; /* Permite scroll nativo da página */
     width: auto !important;
-    max-height: none !important;
+    max-height: none !important; /* Remove limite de altura que criava duplo scroll */
   }
   
-  .table { width: 100% !important; max-width: 100% !important; table-layout: fixed; }
-  .table td, .table th { padding: 0 !important; display: block !important; width: 100% !important; box-sizing: border-box !important; border: none !important; background: transparent !important; }
-  .table tr { background: transparent !important; display: block !important; width: 100% !important; }
+  /* CONVERTE A TABELA NUMA LISTA PERFEITA DE CARTÕES (Sem limites de largura quebrados) */
+  .table { 
+    display: block !important; 
+    width: 100% !important; 
+  }
+  .table thead { 
+    display: none !important; /* Esconde o thead no mobile para evitar overflow */
+  }
+  .table tbody { 
+    display: flex !important; 
+    flex-direction: column !important; 
+    gap: 12px !important; /* Espaçamento exato entre os cards em vez de margem no tr */
+    width: 100% !important; 
+  }
+  .table tr { 
+    display: flex !important; 
+    flex-direction: column !important;
+    width: 100% !important; 
+    background: transparent !important; 
+    border: none !important;
+    margin: 0 !important;
+  }
+  .table td { 
+    display: block !important; 
+    width: 100% !important; 
+    padding: 0 !important; 
+    border: none !important; 
+    background: transparent !important; 
+    box-sizing: border-box !important;
+  }
   
-  .days-badge { min-width: 80px; font-size: 0.65rem; }
+  /* Garante que o interior do td obedeça as margens do celular */
+  .table td > div {
+     box-sizing: border-box !important;
+     width: 100% !important;
+     max-width: 100vw !important;
+  }
+  
+  .days-badge { min-width: 70px; font-size: 0.65rem; }
 
   .material-box { min-height: 48px; padding: 7px 10px; }
   .material-inline-actions { gap: 7px; }
