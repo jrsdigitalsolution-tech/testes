@@ -5,7 +5,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     STATUS_PROPOSTA: 22, DATA_ABERTURA: 23, SEGMENTO: 24, RESPONSAVEL: 25, COMPLEXIDADE: 26, UF: 27, ETAPA: 28, NF: 29, DATA_FRUSTRADA: 30, DATA_ENVIADA: 31, DATA_FATURAMENTO: 32
   });
   
-  let currentStatusFilter = 'FIRMADAS';
+  let currentStatusFilter = 'TODAS'; // Inicia sempre em TODAS
 
   function setFilter(status) {
     currentStatusFilter = status;
@@ -559,6 +559,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (!isGeralView) {
+      // CABEÇALHO DESKTOP - FIRMADAS
       const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
       head.innerHTML = "<tr>" + labs.map(l => {
         const chave = mapaOrdenacaoCabecalho[l];
@@ -581,13 +582,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-        // Renderiza Linha Desktop
+        // LINHA DESKTOP - FIRMADAS
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.CATEGORIA_GERAL])}">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div></td>`;
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
         html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
 
@@ -616,7 +617,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
           html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
 
-          // Gera chips do mobile
+          // Gera chips para o Cartão Mobile
           if(c !== "N/A" && c !== "") {
               let mbClass = "mc-chip ";
               if (c === "OK") mbClass += "mc-ok";
@@ -628,22 +629,22 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         }
 
         const obs = r[COLS.OBS] || "";
-        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
+        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${escapeHtml(obs)}">${escapeHtml(obs)}</small></td>`;
         html += `</tr>`;
 
-        // Renderiza Cartão Mobile Firmadas
+        // CARTÃO MOBILE - FIRMADAS
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
                 <div class="mc-obra-wrap">
                     <i class="bi bi-folder2-open"></i>
-                    <span class="mc-obra-title">${r[COLS.OBRA] || ""}</span>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
                 </div>
                 <span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span>
             </div>
             <div class="mc-body">
-                <div class="mc-client text-truncate">${r[COLS.CLIENTE] || "Cliente não informado"}</div>
-                <div class="mc-category text-truncate">${r[COLS.CATEGORIA_GERAL] || "-"}</div>
+                <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
+                <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
@@ -662,6 +663,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       });
 
     } else {
+      // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
       const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
@@ -689,45 +691,50 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    
         else statusBadgeClass += "bg-light text-secondary";
 
+        // LINHA DESKTOP - GERAL (Mantida EXATAMENTE como estava)
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
-        html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
+        html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><small class="fw-bold">${r[COLS.CATEGORIA_GERAL] || "-"}</small><br><small class="text-muted">${r[COLS.SEGMENTO] || "-"}</small></td>`;
-        html += `<td>${r[COLS.RESPONSAVEL] || "-"}</td>`;
-        html += `<td>${r[COLS.COMPLEXIDADE] || "-"}</td>`;
-        html += `<td>${r[COLS.UF] || "-"}</td>`;
-        html += `<td><div class="text-truncate" style="max-width:120px" title="${r[COLS.ETAPA]}">${r[COLS.ETAPA] || "-"}</div></td>`;
-        html += `<td>${r[COLS.DIAS_PRAZO] || "-"}</td>`;
-        html += `<td>${r[COLS.NF] || "-"}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><small class="fw-bold">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</small><br><small class="text-muted">${escapeHtml(r[COLS.SEGMENTO] || "-")}</small></td>`;
+        html += `<td>${escapeHtml(r[COLS.RESPONSAVEL] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.COMPLEXIDADE] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.UF] || "-")}</td>`;
+        html += `<td><div class="text-truncate" style="max-width:120px" title="${escapeHtml(r[COLS.ETAPA])}">${escapeHtml(r[COLS.ETAPA] || "-")}</div></td>`;
+        html += `<td>${escapeHtml(r[COLS.DIAS_PRAZO] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.NF] || "-")}</td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
         html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
-        
         if (isFrustrada) {
           html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
         }
         html += `</tr>`;
 
-        // --- RENDERIZAÇÃO MOBILE (CARTÃO GERAL) ---
+        // CARTÃO MOBILE - GERAL (Com Item ao invés de Etapa/Resp)
         
-        // Regra EXCLUSIVA DO MOBILE: Extrair as 3 primeiras palavras do Item
-        const itemOriginal = String(r[COLS.ITEM_GERAL] || "-").trim();
-        const itemWords = itemOriginal.split(/\s+/);
-        const itemResumido = itemWords.length > 3 ? itemWords.slice(0, 3).join(" ") + "..." : itemOriginal;
+        // 1. Extração segura das 3 primeiras palavras do Item
+        let itemStr = String(r[COLS.ITEM_GERAL] || "").trim();
+        let itemDisplay = "-";
+        if (itemStr) {
+            let words = itemStr.split(/\s+/);
+            itemDisplay = words.length > 3 ? words.slice(0, 3).join(" ") + "..." : itemStr;
+        }
 
+        // 2. Montagem do Cartão. Note que incluí a "Categoria" para ficar bonito e padronizado como o de FIRMADAS
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
                 <div class="mc-obra-wrap">
                     <i class="bi bi-folder2-open"></i>
-                    <span class="mc-obra-title">${r[COLS.OBRA] || ""}</span>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
                 </div>
                 <span class="${statusBadgeClass}">${stProp || "-"}</span>
             </div>
             <div class="mc-body">
-                <div class="mc-client text-truncate">${r[COLS.CLIENTE] || "Cliente não informado"}</div>
+                <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
+                <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
@@ -740,7 +747,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                     </div>
                     <div class="mc-kpi" style="grid-column: span 2;">
                         <span class="mc-kpi-lbl">Item</span>
-                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemOriginal)}">${escapeHtml(itemResumido)}</span>
+                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemStr)}">${escapeHtml(itemDisplay)}</span>
                     </div>
                 </div>
             </div>
@@ -863,6 +870,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (inputForn) inputForn.value = document.getElementById(`${id}_forn_val`).value;
     if (inputOc) inputOc.value = document.getElementById(`${id}_oc_val`).value;
     
+    // Mostra o valor limpo sem cêntimos infinitos no modal
     const vRaw = document.getElementById(`${id}_valor_val`).value;
     if (inputValor) inputValor.value = (vRaw !== "" && vRaw !== null) ? parseMoneyFlexible(vRaw).toFixed(2).replace('.00', '') : "";
     
@@ -919,7 +927,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function carregar() {
     document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
-    document.getElementById('mobileCardsContainer').innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando...</span></div>`;
     
     callServer('sincronizarEFetch', [], data => {
       if (!Array.isArray(data) || data.length === 0) { 
@@ -942,7 +949,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           </span><br>
         </td></tr>
       `;
-      document.getElementById('mobileCardsContainer').innerHTML = `<div class="text-center py-5 text-danger"><i class="bi bi-database-x mb-2" style="font-size: 2.5rem;"></i><br>Erro de Conexão.</div>`;
     });
   }
 
@@ -999,6 +1005,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     try {
       atualizarFaturamentoPrevistoFormulario();
       
+      // Limpa os valores monetários antes de salvar para o banco ficar perfeito
       const valorLimpo = document.getElementById('valor').value !== "" ? String(parseMoneyFlexible(document.getElementById('valor').value)) : "";
       
       const obj = { 
@@ -1038,6 +1045,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     document.getElementById('obra').value = r[COLS.OBRA] || "";
     document.getElementById('cliente').value = r[COLS.CLIENTE] || ""; 
     
+    // Coloca os números visualmente limpos nos inputs de edição, tirando ".000000" do banco
     const rawValor = r[COLS.VALOR];
     document.getElementById('valor').value = (rawValor !== "" && rawValor !== null) ? parseMoneyFlexible(rawValor).toFixed(2).replace('.00', '') : "";
     
