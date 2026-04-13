@@ -183,6 +183,15 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
   white-space: nowrap; flex-shrink: 0;
 }
 
+/* BLINDAGEM CSS: Força a exibição correta independente do HTML */
+@media (min-width: 769px) {
+  .status-select-wrapper { display: none !important; }
+}
+@media (max-width: 768px) {
+  .status-filters { display: none !important; }
+  .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; margin-top: 4px; }
+}
+
 /* --- TABELA PRINCIPAL (DESKTOP) --- */
 .table-viewport { 
   background: white; border-radius: var(--border-radius); border: 1px solid #e2e8f0; 
@@ -442,7 +451,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   
   .stat-grid { padding: 10px 14px; gap: 10px; }
   .filter-wrapper-header { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; padding: 0 14px; }
-  .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; }
   
   .modal-xl { max-width: 98vw; }
   #modalObra .modal-body { padding: 1rem; }
@@ -467,7 +475,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .stat-label { font-size: 0.62rem; }
   .stat-val { font-size: 1.05rem; }
   
-  /* Ajustes do select só aparecem neste tamanho pois ele é oculto no PC */
   .status-select { font-size: 0.8rem; padding: 10px 36px 10px 38px; }
   .status-select-wrapper i { left: 12px; }
   .status-select-wrapper::after { right: 12px; }
