@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Carteira</title>
   
-  <!-- Links blindados contra formatação -->
-  <link href="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https&#58;//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
-  <script src="https&#58;//cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
@@ -22,7 +21,7 @@
 <div id="mainContent">
   <nav class="navbar-custom">
     <div class="header-brand">
-      <img src="https&#58;//res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
+      <img src="https://res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
       <h1 class="header-title">Carteira</h1>
       <div class="date-group header-date-group">
         <span id="txtSemanaAtual" class="week-badge">Semana -</span>
@@ -31,6 +30,7 @@
     </div> 
 
     <div class="nav-actions">
+      <button id="btnRefresh" type="button" class="btn-refresh-modern" onclick="acionarAtualizacao(this)" aria-label="Atualizar"><i class="bi bi-arrow-repeat"></i></button>
       <div class="export-menu-wrap">
         <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios"><i class="bi bi-send-plus"></i></button>
         <div id="menuExtracao" class="extract-menu-panel">
@@ -49,9 +49,7 @@
           </button>
         </div>
       </div>
-      <button id="btnAnalytics" type="button" class="btn-extract-modern" onclick="showAnalyticsSoon()" aria-label="Analítico">
-        <i class="bi bi-bar-chart"></i>
-      </button>
+      <button class="btn-add-pwa ms-2" onclick="abrirNovo()" aria-label="Nova Obra"><i class="bi bi-plus"></i></button>
     </div>
   </nav>
 
@@ -212,7 +210,7 @@
         <div class="extract-choice-grid" id="blocoTipoExtracao">
           <button type="button" class="extract-choice-card" id="btnExtracaoGeral" onclick="selecionarTipoExtracao('geral')">
             <i class="bi bi-grid-1x2"></i>
-            <span><strong>Visão atual</strong><small>Resumo baseado no filtro selecionado.</small></span>
+            <span><strong>Visão geral</strong><small>Todas as obras ativas em um só resumo.</small></span>
           </button>
           <button type="button" class="extract-choice-card" id="btnExtracaoObra" onclick="selecionarTipoExtracao('obra')">
             <i class="bi bi-buildings"></i>
@@ -239,7 +237,7 @@
   </div>
 </div>
 
-<script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="motorbackend.js"></script>
 <script src="script.js"></script>
 
