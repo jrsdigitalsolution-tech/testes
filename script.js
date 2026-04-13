@@ -5,7 +5,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     STATUS_PROPOSTA: 22, DATA_ABERTURA: 23, SEGMENTO: 24, RESPONSAVEL: 25, COMPLEXIDADE: 26, UF: 27, ETAPA: 28, NF: 29, DATA_FRUSTRADA: 30, DATA_ENVIADA: 31, DATA_FATURAMENTO: 32
   });
   
-  let currentStatusFilter = 'TODAS';
+  let currentStatusFilter = 'FIRMADAS';
 
   function setFilter(status) {
     currentStatusFilter = status;
@@ -552,7 +552,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const isGeralView = currentStatusFilter !== 'FIRMADAS';
     
     let html = "";
-    let htmlMobile = ""; // Variável paralela para o Mobile
+    let htmlMobile = "";
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
     
@@ -581,7 +581,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-        // --- RENDERIZAÇÃO DESKTOP (TABELA) ---
+        // Renderiza Linha Desktop
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
@@ -591,7 +591,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
         html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
 
-        // Coletar itens para o Mobile enquanto faz o loop Desktop
         let miniBadgesMobile = "";
 
         for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
@@ -615,11 +614,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
           const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
           const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
-          
-          // Inject na Tabela
           html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
-          
-          // Preparar bolinha nativa do Mobile (apenas as que não são N/A para não poluir)
+
+          // Gera chips do mobile
           if(c !== "N/A" && c !== "") {
               let mbClass = "mc-chip ";
               if (c === "OK") mbClass += "mc-ok";
@@ -634,7 +631,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
         html += `</tr>`;
 
-        // --- RENDERIZAÇÃO MOBILE (CARTÃO FIRMADAS) ---
+        // Renderiza Cartão Mobile Firmadas
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
@@ -686,13 +683,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         
         let statusBadgeClass = "days-badge shadow-sm ";
         const stProp = r[COLS.STATUS_PROPOSTA] || "";
-        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
-        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
-        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
-        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
+        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";        
+        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok"; 
+        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";       
+        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    
         else statusBadgeClass += "bg-light text-secondary";
 
-        // --- RENDERIZAÇÃO DESKTOP (TABELA GERAL) ---
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
         html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
@@ -715,6 +711,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         html += `</tr>`;
 
         // --- RENDERIZAÇÃO MOBILE (CARTÃO GERAL) ---
+        
+        // Regra EXCLUSIVA DO MOBILE: Extrair as 3 primeiras palavras do Item
+        const itemOriginal = String(r[COLS.ITEM_GERAL] || "-").trim();
+        const itemWords = itemOriginal.split(/\s+/);
+        const itemResumido = itemWords.length > 3 ? itemWords.slice(0, 3).join(" ") + "..." : itemOriginal;
+
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
@@ -737,8 +739,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                         <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
                     </div>
                     <div class="mc-kpi" style="grid-column: span 2;">
-                        <span class="mc-kpi-lbl">Etapa / Resp.</span>
-                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;">${r[COLS.ETAPA] || "-"} • ${r[COLS.RESPONSAVEL] || "-"}</span>
+                        <span class="mc-kpi-lbl">Item</span>
+                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemOriginal)}">${escapeHtml(itemResumido)}</span>
                     </div>
                 </div>
             </div>
@@ -749,16 +751,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
     if (dados.length === 0) {
       body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhum registro encontrado nesta visualização.</td></tr>`;
-      mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
+      if(mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
     } else {
-      // Atualiza Tabela PC
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
       body.classList.add('animate-fade-up');
       requestAnimationFrame(() => { body.innerHTML = html; });
-
-      // Atualiza Cartões Mobile
-      mobileContainer.innerHTML = htmlMobile;
+      if(mobileContainer) mobileContainer.innerHTML = htmlMobile;
     }
 
     const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
