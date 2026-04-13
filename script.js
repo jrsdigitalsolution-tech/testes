@@ -533,7 +533,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (isMobileView) {
-      // ==== RENDERIZAÇÃO NATIVA MOBILE (CARDS, 100% RESPONSIVO) ====
+      // ==== RENDERIZAÇÃO NATIVA MOBILE (NOVO DESIGN DOS CARDS) ====
       head.innerHTML = `
         <tr class="block w-full mb-3 bg-transparent border-0">
           <td class="block w-full p-0 bg-transparent border-0">
@@ -570,55 +570,59 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         html += `<tr class="block w-full mb-3 bg-transparent border-0">`;
         html += `<td class="block w-full p-0 bg-transparent border-0">`;
-        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-3 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
+        html += `<div onclick="lidarCliqueLinha(${dO.originalIndex})" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2 active:scale-[0.98] transition-transform cursor-pointer w-full box-border overflow-hidden">`;
         
-        // Linha Superior
-        html += `<div class="flex justify-between items-start w-full gap-3">`;
-        html += `<div class="flex items-center gap-2 min-w-0" style="flex: 1;">`; 
-        html += `<div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center shrink-0 border border-slate-100"><i class="bi bi-building"></i></div>`;
-        html += `<span class="font-black text-slate-800 text-lg tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        // 1. TOPO: Ícone de Projeto e Número da Obra isolados
+        html += `<div class="flex items-center gap-3 w-full mb-1">`;
+        html += `<div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-100">`;
+        // Ícone elegante de prancheta/projeto
+        html += `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`;
         html += `</div>`;
-        
+        html += `<span class="font-black text-slate-900 text-[1.4rem] tracking-tight truncate">${r[COLS.OBRA] || "-"}</span>`;
+        html += `</div>`;
+
+        // 2. LINHA DE STATUS: Prazo e Compras lado a lado
+        html += `<div class="flex items-center gap-4 w-full border-b border-slate-100 pb-3 mb-1 pl-1">`;
         if (isGeralView) {
-            html += `<span class="${statusBadgeClass} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0 max-w-[100px] truncate text-center">${stProp || "-"}</span>`;
+            html += `<div class="flex flex-col items-start shrink-0">`;
+            html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Status</span>`;
+            html += `<span class="${statusBadgeClass} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0">${stProp || "-"}</span>`;
+            html += `</div>`;
+            html += `<div class="flex flex-col items-start min-w-0 pl-1">`;
+            html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Prazo</span>`;
+            html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-none mt-1">${isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-")}</span>`;
+            html += `</div>`;
         } else {
-            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.65rem] px-2 py-1 rounded font-black uppercase tracking-wider shrink-0 max-w-[100px] truncate text-center">${res.texto}</span>`;
+            // Abas "Firmadas": Mostra os badges verde/vermelho com rótulos
+            html += `<div class="flex flex-col items-start shrink-0">`;
+            html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Prazo</span>`;
+            html += `<span class="days-badge ${res.atraso ? 'days-urgent' : 'days-ok'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0">${res.texto}</span>`;
+            html += `</div>`;
+            html += `<div class="flex flex-col items-start shrink-0">`;
+            html += `<span class="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mb-1">Compras</span>`;
+            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.7rem] px-3 py-1 rounded font-black uppercase tracking-wider text-center m-0">${resCompras.texto}</span>`;
+            html += `</div>`;
         }
         html += `</div>`;
 
-        // Linha do Meio (Detalhes)
-        html += `<div class="flex flex-col w-full bg-slate-50 p-3 rounded-lg border border-slate-100 gap-1.5 overflow-hidden">`;
+        // 3. CORPO DO CARTÃO (Cliente e Item) - Mantido Intacto
+        html += `<div class="flex flex-col w-full bg-slate-50 p-3 rounded-lg border border-slate-100 gap-1.5 overflow-hidden mt-1">`;
         html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-snug line-clamp-2"><i class="bi bi-person text-slate-400 mr-1.5"></i>${r[COLS.CLIENTE] || "-"}</span>`;
         html += `<span class="text-slate-500 text-[0.75rem] leading-snug line-clamp-2"><i class="bi bi-box-seam text-slate-400 mr-1.5"></i>${r[COLS.ITEM_GERAL] || "-"}</span>`;
         html += `</div>`;
 
-        // Linha Inferior (Valores)
-        html += `<div class="flex justify-between items-end w-full mt-1 gap-2">`;
-        html += `<div class="flex flex-col min-w-0" style="flex: 1;">`;
-        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5 truncate">Valor Total</span>`;
-        html += `<span class="font-black text-primary text-[1.05rem] leading-none truncate">R$ ${formatMoneyBR(val)}</span>`;
+        // 4. RODAPÉ: Valor Total Centralizado
+        html += `<div class="flex flex-col items-center justify-center w-full mt-2 pt-1 pb-1 gap-1">`;
+        html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Valor Total</span>`;
+        html += `<span class="font-black text-primary text-[1.25rem] leading-none">R$ ${formatMoneyBR(val)}</span>`;
         html += `</div>`;
 
-        if (!isGeralView) {
-            html += `<div class="flex flex-col items-end shrink-0">`;
-            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Compras</span>`;
-            html += `<span class="days-badge ${resCompras.valor >= 100 ? 'days-ok' : 'days-urgent'} text-[0.65rem] px-2 py-0.5 rounded font-black m-0 shrink-0 text-center">${resCompras.texto}</span>`;
-            html += `</div>`;
-        } else {
-            html += `<div class="flex flex-col items-end shrink-0">`;
-            html += `<span class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Prazo</span>`;
-            const prazoEx = isStatusDate(String(r[COLS.DIAS_PRAZO])) ? formatDateDisplayBR(r[COLS.DIAS_PRAZO]) : (r[COLS.DIAS_PRAZO] || "-");
-            html += `<span class="text-slate-700 text-[0.8rem] font-bold leading-none">${prazoEx}</span>`;
-            html += `</div>`;
-        }
-        html += `</div>`; 
-        
         html += `</div>`; 
         html += `</td></tr>`;
       });
 
     } else {
-      // ==== RENDERIZAÇÃO PC (TABELA HORIZONTAL TRADICIONAL) ====
+      // ==== RENDERIZAÇÃO PC (TABELA HORIZONTAL TRADICIONAL INTATA) ====
       if (!isGeralView) {
         const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
         head.innerHTML = "<tr>" + labs.map(l => {
@@ -1239,7 +1243,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (comprasCriticas.length) { linhas.push(`• Compras mais críticas: ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(', ')}`); }
     if (proximosEventos.length) { linhas.push(`• Próximos vencimentos / entregas:`); proximosEventos.forEach(ev => linhas.push(`  - ${ev.obra} • ${ev.item}: ${normalizarDataTexto(ev.texto)}`)); } else { linhas.push(`• Não há vencimentos ou entregas futuras registradas.`); } linhas.push('');
     
-    const leitura = atrasos.length ? `Prioridade do dia: atacar primeiro as obras ${atrasos.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')} por risco de prazo.` : comprasCriticas.length ? `Prioridade do dia: regularizar compras das obras ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')}.` : `Cenário controlado: manter acompanhamento das compras e dos próximos vencimentos.`;
+    const leitura = atrasos.length ? `Prioridade do dia: atacar primeiro as obras ${atrasos.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')} por risco de prazo.` : comprasCriticas.length ? `Prioridade do dia: regularizar compras das obras ${comprasCriticas.slice(0,2).map(x => x.row.content[COLS.OBRA]).join(' e ')}.` : `Cenário controlado: mantener acompanhamento das compras e dos próximos vencimentos.`;
     linhas.push(`🧠 *Leitura geral*`); linhas.push(leitura); return linhas.join('\n');
   }
 
