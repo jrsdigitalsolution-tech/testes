@@ -94,22 +94,48 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 .stat-val { font-size: 1.15rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.1; word-wrap: normal; overflow-wrap: normal; }
 .stat-label { font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin: 0; letter-spacing: 0.02em; }
 
-/* --- FILTROS MODERNOS (Dropdown) --- */
+/* --- FILTROS (Faixa Desktop / Dropdown Mobile) --- */
 .filter-wrapper-header {
-  display: flex; justify-content: space-between; align-items: center; 
-  gap: 15px; margin-bottom: 16px; padding: 0 20px;
+  display: flex; justify-content: space-between; align-items: flex-end; 
+  gap: 15px; margin-bottom: 12px; padding: 0 20px;
 }
 
+/* 1. Visão Desktop (Faixa Original) */
+.status-filters {
+  display: flex; gap: 24px; overflow-x: auto; 
+  border-bottom: 2px solid #e2e8f0; padding-bottom: 0;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  flex: 1; min-width: 0;
+}
+.status-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-btn {
+  background: transparent !important; border: none !important; padding: 8px 4px;
+  font-size: 0.85rem; font-weight: 800; color: #64748b !important; cursor: pointer; 
+  text-transform: uppercase; letter-spacing: 0.03em; transition: color 0.2s ease; 
+  white-space: nowrap; box-shadow: none !important; flex-shrink: 0; position: relative; 
+  margin-bottom: -2px; border-radius: 0 !important; outline: none;
+}
+.filter-btn:hover { color: var(--secondary) !important; background: transparent !important; }
+.filter-btn.active { color: var(--primary) !important; background: transparent !important; }
+.filter-btn.active::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; 
+  height: 3px; background-color: var(--primary); border-radius: 3px 3px 0 0;
+}
+
+/* 2. Visão Mobile (Dropdown) */
 .status-select-wrapper {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   background: white;
   border: 1px solid #cbd5e1;
   border-radius: 12px;
   padding: 0;
   transition: all 0.2s ease;
-  min-width: 220px;
+  width: 100%;
 }
 
 .status-select-wrapper:hover {
@@ -130,7 +156,7 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
   -webkit-appearance: none;
   background: transparent;
   border: none;
-  padding: 12px 40px 12px 42px; /* Espaço para ícone e seta */
+  padding: 12px 40px 12px 42px;
   font-size: 0.85rem;
   font-weight: 800;
   color: var(--primary);
@@ -142,7 +168,7 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 }
 
 .status-select-wrapper::after {
-  content: '\F282'; /* bootstrap icon chevron-down */
+  content: '\F282'; /* Ícone seta para baixo */
   font-family: "bootstrap-icons";
   position: absolute;
   right: 14px;
@@ -416,9 +442,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   
   .stat-grid { padding: 10px 14px; gap: 10px; }
   .filter-wrapper-header { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; padding: 0 14px; }
-  .status-select-wrapper { width: 100%; }
   .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; }
-  /* Removido o display block e o margin da .table-viewport aqui pois o bootstrap 'd-none d-md-block' cuida de sumir com a tabela */
   
   .modal-xl { max-width: 98vw; }
   #modalObra .modal-body { padding: 1rem; }
@@ -443,6 +467,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .stat-label { font-size: 0.62rem; }
   .stat-val { font-size: 1.05rem; }
   
+  /* Ajustes do select só aparecem neste tamanho pois ele é oculto no PC */
   .status-select { font-size: 0.8rem; padding: 10px 36px 10px 38px; }
   .status-select-wrapper i { left: 12px; }
   .status-select-wrapper::after { right: 12px; }
