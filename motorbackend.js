@@ -13,7 +13,6 @@ function getSafeId(str) {
 
 const motorBackend = {
 
-  // Recebe o ano (ex: '26', '25') vindo do script.js
   sincronizarEFetch: async function(anoFiltro = 'TODOS') {
     try {
       // 1. Conecta no servidor da empresa usando o Túnel Cloudflare (Seguro, HTTPS e Público)
@@ -39,12 +38,12 @@ const motorBackend = {
           const numObra = String(erp.obra || '').trim();
           if(!numObra) return;
 
-          // --- FILTRO INTELIGENTE DE ANO ---
+          // --- FILTRO DE ANO ADICIONADO COM SEGURANÇA ---
           if (anoFiltro !== 'TODOS') {
              if (!numObra.startsWith(anoFiltro)) return;
           }
 
-          const numObraLimpo = numObra; 
+          const numObraLimpo = numObra;
 
           // --- PREVENÇÃO DE DUPLICATAS (AGRUPAMENTO) ---
           if (obrasProcessadas[numObraLimpo]) {
