@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Carteira</title>
   
-  <!-- Links originais e blindados contra formatação do Tailwind que quebrava o PC -->
+  <!-- Links blindados contra formatação (Original Mantido) -->
   <link href="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https&#58;//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
@@ -14,8 +14,8 @@
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <!-- Atualizado para v=30 para ignorar qualquer cache antigo -->
-  <link rel="stylesheet" href="style.css?v=30">
+  <!-- Versão alterada para forçar o telemóvel a limpar cache -->
+  <link rel="stylesheet" href="style.css?v=35">
 </head>
 <body class="antialiased">
 
@@ -29,9 +29,10 @@
         <span id="txtSemanaAtual" class="week-badge">Semana -</span>
         <span id="txtDataAtual">Carregando...</span>
       </div>
-    </div> 
+    </div>
 
     <div class="nav-actions">
+      <!-- Menu de Extração de Relatórios -->
       <div class="export-menu-wrap">
         <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios"><i class="bi bi-send-plus"></i></button>
         <div id="menuExtracao" class="extract-menu-panel">
@@ -50,6 +51,7 @@
           </button>
         </div>
       </div>
+      <!-- Novo botão Analítico -->
       <button id="btnAnalytics" type="button" class="btn-extract-modern" onclick="showAnalyticsSoon()" aria-label="Analítico">
         <i class="bi bi-bar-chart"></i>
       </button>
@@ -63,10 +65,11 @@
     <div class="stat-card"><div class="stat-icon icon-entrega"><i class="bi bi-truck"></i></div><div class="stat-content"><p class="stat-label">Atraso Crítico</p><h3 id="resumoProxima" class="stat-val">-</h3></div></div>
   </div>
 
-  <div class="filter-wrapper-header">
+  <!-- FILTROS: Layout Seguro usando Bootstrap puro para manter o PC perfeito -->
+  <div class="filter-wrapper-header d-flex flex-wrap gap-2 align-items-end">
     
     <!-- ESQUERDA (PC): Botões Originais Intactos -->
-    <div class="status-filters d-none d-md-flex" id="filterContainer">
+    <div class="status-filters d-none d-md-flex flex-grow-1" id="filterContainer" style="margin-bottom: 0;">
       <button class="filter-btn" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
       <button class="filter-btn active" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
       <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
@@ -75,9 +78,9 @@
       <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
     </div>
 
-    <!-- ESQUERDA (MOBILE): Status + Ano lado a lado sem quebrar nada -->
-    <div class="d-flex d-md-none gap-2 w-100">
-      <div class="status-select-wrapper shadow-sm" style="flex: 1; width: auto;">
+    <!-- EXCLUSIVO MOBILE: OS DOIS DROPDOWNS LADO A LADO -->
+    <div class="d-flex d-md-none gap-2 w-100 mb-2">
+      <div class="status-select-wrapper shadow-sm flex-grow-1">
         <i class="bi bi-funnel-fill"></i>
         <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
           <option value="FIRMADAS">Firmadas</option>
@@ -88,8 +91,7 @@
           <option value="CONCLUIDAS">Concluídas</option>
         </select>
       </div>
-
-      <div class="status-select-wrapper shadow-sm" style="flex: 0 0 110px; width: auto;">
+      <div class="status-select-wrapper shadow-sm" style="width: 115px; flex-shrink: 0;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select" id="anoFilterMobile" onchange="mudarAno(this.value)" style="padding-left: 36px; padding-right: 14px;">
           <option value="TODOS" selected>Todos</option>
@@ -100,9 +102,9 @@
       </div>
     </div>
 
-    <!-- DIREITA (PC): Filtro de Ano + Texto -->
-    <div class="d-none d-md-flex align-items-end gap-3 ms-auto">
-      <div class="status-select-wrapper shadow-sm mb-1" style="min-width: 120px;">
+    <!-- DIREITA (PC): Filtro de Ano + Texto (Alinhados perfeitamente) -->
+    <div class="d-none d-md-flex align-items-center gap-3 ms-auto">
+      <div class="status-select-wrapper shadow-sm mb-0" style="min-width: 120px;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select py-1" id="anoFilterPC" onchange="mudarAno(this.value)" style="padding-left: 34px; padding-top: 8px; padding-bottom: 8px;">
           <option value="TODOS" selected>Histórico</option>
@@ -111,12 +113,11 @@
           <option value="24">2024</option>
         </select>
       </div>
-      <div class="table-scroll-label mb-0">Arraste para ver mais →</div>
+      <div class="table-scroll-label mb-0 pb-1">Arraste para ver mais →</div>
     </div>
 
   </div>
 
-  <!-- VISÃO DESKTOP -->
   <div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
     <table class="table table-hover mb-0">
       <thead id="tabHead"></thead>
@@ -131,7 +132,7 @@
     </table>
   </div>
 
-  <!-- VISÃO MOBILE -->
+  <!-- VISÃO MOBILE (Cartões Nativos) -->
   <div id="mobileCardsContainer" class="d-md-none mobile-cards-wrapper px-3 pb-4">
     <div class="text-center py-5 text-muted">
       <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
@@ -141,13 +142,13 @@
 
 </div>
 
-<!-- Modais do sistema... -->
 <div class="modal fade" id="modalObra" data-bs-backdrop="static" tabindex="-1">
   <div class="modal-dialog modal-xl modal-dialog-centered">
     <div class="modal-content shadow-lg border-0">
       <div class="modal-header bg-light">
         <h6 class="fw-bold text-primary mb-0" id="modalObraTitle">CADASTRO DE OBRA</h6>
-        <div class="ms-auto d-flex align-items-center modal-header-actions">
+        <div class="ms-auto d-flex gap-2 align-items-center modal-header-actions">
+          <!-- Textos envoltos em d-none d-md-inline para desaparecer no mobile -->
           <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline">Detalhe Financeiro</span></button>
           <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline">Base Geral</span></button>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -293,8 +294,8 @@
 </div>
 
 <script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="motorbackend.js?v=30"></script>
-<script src="script.js?v=30"></script>
+<script src="motorbackend.js?v=35"></script>
+<script src="script.js?v=35"></script>
 
 </body>
 </html>
