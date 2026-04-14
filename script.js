@@ -217,8 +217,16 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function lidarCliqueLinha(idx) {
     if (!dadosLocais[idx] || !Array.isArray(dadosLocais[idx].content)) return;
-    // Removida a trava: agora todos os status abrem o modal principal de edição
-    editar(idx);
+    
+    const r = dadosLocais[idx].content;
+    const status = String(r[COLS.STATUS_PROPOSTA] || '').trim();
+    
+    // Retornada a função original: FIRMADAS edita, os demais abrem resumo
+    if (status === 'FIRMADAS') {
+      editar(idx);
+    } else {
+      abrirResumoProposta(idx);
+    }
   }
 
   function abrirResumoProposta(idx) {
