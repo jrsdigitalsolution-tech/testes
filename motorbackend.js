@@ -13,9 +13,10 @@ function getSafeId(str) {
 
 const motorBackend = {
 
-  sincronizarEFetch: async function() {
+  // Recebe o filtro do ano (ex: '26', '25', ou 'TODOS') vindo do script.js
+  sincronizarEFetch: async function(anoFiltro = 'TODOS') {
     try {
-      // 1. Conecta no servidor da empresa usando o Túnel Cloudflare (Seguro, HTTPS e Público)
+      // 1. Restaurado para o SEU link original do Cloudflare que funciona
       const response = await fetch('https://thumbzilla-modern-refrigerator-simon.trycloudflare.com/api/carteira');
       
       if (!response.ok) {
@@ -38,12 +39,12 @@ const motorBackend = {
           const numObra = String(erp.obra || '').trim();
           if(!numObra) return;
 
-          // --- FILTRO: APENAS OBRAS DE 2026 (DESATIVADO PARA TESTES) ---
-          // const matchNum = numObra.match(/26[.,-]?\d{3,}/);
-          // if (!matchNum) return; 
-          // const numObraLimpo = matchNum[0]; 
-          
-          // MODO TESTE: Puxando TODAS as obras sem filtrar prefixo
+          // --- FILTRO DE ANO ---
+          // Se não for 'TODOS', ignora obras que não comecem com os números do ano (ex: 26)
+          if (anoFiltro !== 'TODOS') {
+             if (!numObra.startsWith(anoFiltro)) return;
+          }
+
           const numObraLimpo = numObra; 
 
           // --- PREVENÇÃO DE DUPLICATAS (AGRUPAMENTO) ---
