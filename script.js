@@ -5,8 +5,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     STATUS_PROPOSTA: 22, DATA_ABERTURA: 23, SEGMENTO: 24, RESPONSAVEL: 25, COMPLEXIDADE: 26, UF: 27, ETAPA: 28, NF: 29, DATA_FRUSTRADA: 30, DATA_ENVIADA: 31, DATA_FATURAMENTO: 32
   });
   
-  let currentStatusFilter = 'TODAS'; // Inicia sempre em TODAS
-  let currentAnoFilter = 'TODOS';    // Inicia trazendo o Histórico Geral
+  let currentStatusFilter = 'FIRMADAS'; // Original Intacto
+  let currentAnoFilter = 'TODOS'; 
 
   function mudarAno(ano) {
     currentAnoFilter = ano;
@@ -14,7 +14,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const selectPC = document.getElementById('anoFilterPC');
     if (selectMobile) selectMobile.value = ano;
     if (selectPC) selectPC.value = ano;
-    carregar(); // Refaz a chamada com o novo ano
+    carregar(); 
   }
 
   function setFilter(status) {
@@ -244,19 +244,30 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       const preco = document.getElementById(`${id}_valor_val`)?.value || "";
       const descPendencia = document.getElementById(`${id}_qdesc_val`)?.value || "";
 
-      if (status && status !== "OK" && status !== "N/A" && status !== "?" && !isStatusDate(status)) return `Status inválido para o item ${it}.`;
-      if (status === "OK" && preco === "") return `Informe o valor do item ${it}.`;
-      if (status === "?" && !String(descPendencia).trim()) return `Descreva a pendência do item ${it}.`;
+      if (status && status !== "OK" && status !== "N/A" && status !== "?" && !isStatusDate(status)) {
+        return `Status inválido para o item ${it}.`;
+      }
+      if (status === "OK" && preco === "") {
+        return `Informe o valor do item ${it}.`;
+      }
+      if (status === "?" && !String(descPendencia).trim()) {
+        return `Descreva a pendência do item ${it}.`;
+      }
+      
       if (pedido && parseDataUniversal(pedido) === null) return `Data de pedido inválida no item ${it}.`;
       if (chegada && parseDataUniversal(chegada) === null) return `Data de chegada inválida no item ${it}.`;
 
       const dtPedido = parseDataUniversal(pedido);
       const dtChegada = parseDataUniversal(chegada);
-      if (dtPedido && dtChegada && dtChegada < dtPedido) return `A chegada não pode ser menor que o pedido no item ${it}.`;
+      if (dtPedido && dtChegada && dtChegada < dtPedido) {
+        return `A chegada não pode ser menor que o pedido no item ${it}.`;
+      }
 
       if (preco !== "") {
         const p = parseMoneyFlexible(preco);
-        if (!Number.isFinite(p) || p < 0) return `Valor inválido no item ${it}.`;
+        if (!Number.isFinite(p) || p < 0) {
+          return `Valor inválido no item ${it}.`;
+        }
       }
     }
     return "";
@@ -265,11 +276,21 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   let dadosLocais = [];
   let estadoOrdenacao = { key: "", dir: "asc" };
   const mapaOrdenacaoCabecalho = {
-    "OBRA": "obra", "CLIENTE": "cliente", "VALOR": "valor", "PREÇO": "valor",
-    "ITEM": "itemGeral", "CATEGORIA": "categoriaGeral", "CATEG. / SEGMENTO": "categoriaGeral",
-    "STATUS DO PRAZO": "prazo", "STATUS DE COMPRAS": "compras", "FATUR.": "fatur",
-    "ABERTURA": "abertura", "STATUS": "status", "RESPONSÁVEL": "responsavel",
-    "COMPLEX.": "complexidade", "UF": "uf", "ETAPA": "etapa", "NF": "nf"
+    "OBRA": "obra",
+    "CLIENTE": "cliente",
+    "VALOR": "valor", "PREÇO": "valor",
+    "ITEM": "itemGeral",
+    "CATEGORIA": "categoriaGeral", "CATEG. / SEGMENTO": "categoriaGeral",
+    "STATUS DO PRAZO": "prazo",
+    "STATUS DE COMPRAS": "compras",
+    "FATUR.": "fatur",
+    "ABERTURA": "abertura",
+    "STATUS": "status",
+    "RESPONSÁVEL": "responsavel",
+    "COMPLEX.": "complexidade",
+    "UF": "uf",
+    "ETAPA": "etapa",
+    "NF": "nf"
   };
   
   let modalUI; let modalResumoUI; let modalCompraUI; let modalPendenciaUI; let modalObraEl;
@@ -294,7 +315,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         if (modalObraEl && modalObraEl.classList.contains('show')) document.body.classList.add('modal-open');
       });
     });
-    if (modalObraEl) modalObraEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('child-modal-open'); });
+
+    if (modalObraEl) {
+      modalObraEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('child-modal-open'); });
+    }
   }
 
   function configurarCabecalhoData() {
@@ -313,7 +337,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const dataFirmada = normalizarDataZeroHora(parseDataUniversal(r[COLS.DATA]));
     const limite = calcularDataPrevistaRow(r);
 
-    if (!dataFirmada || !limite) return { texto: "-", valor: 0, atrasoDias: 0, atraso: false };
+    if (!dataFirmada || !limite) {
+      return { texto: "-", valor: 0, atrasoDias: 0, atraso: false };
+    }
 
     const hoje = normalizarDataZeroHora(new Date());
     const utcHoje = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
@@ -323,32 +349,41 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     let diasDecorridos = Math.floor((utcHoje - utcFirmada) / 86400000);
     if (diasDecorridos < 0) diasDecorridos = 0;
 
-    let atraso = 0, estaAtrasado = false;
+    let atraso = 0;
+    let estaAtrasado = false;
+
     if (utcHoje > utcLimite) {
       estaAtrasado = true;
       atraso = Math.floor((utcHoje - utcLimite) / 86400000);
     }
+
     return { texto: diasDecorridos + "d", valor: diasDecorridos, atrasoDias: atraso, atraso: estaAtrasado };
   }
 
   function calcularStatusComprasVirtual(r) {
-    let totalAplicavel = 0, totalComprado = 0;
+    let totalAplicavel = 0;
+    let totalComprado = 0;
     const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
     for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
       const itemNome = ITENS[j - COLS.ITEM_INICIO];
       if (itemNome === "FATUR.") continue;
+
       const status = String(r[j] || "").trim();
       if (status === "" || status === "N/A") continue;
-      
+
       totalAplicavel += 1;
       const id = getSafeId(itemNome);
       const det = detalhesJson[id] || {};
+
       const temChegada = det.chegada && parseDataUniversal(det.chegada) !== null;
       const temPedido = det.pedido && parseDataUniversal(det.pedido) !== null;
 
-      if (status === "OK" || isStatusDate(status) || temChegada || temPedido) totalComprado += 1;
+      if (status === "OK" || isStatusDate(status) || temChegada || temPedido) {
+        totalComprado += 1;
+      }
     }
+
     if (totalAplicavel === 0) return { texto: "-", valor: 0 };
     const pct = Math.round((totalComprado / totalAplicavel) * 100);
     return { texto: `${pct}%`, valor: pct };
@@ -363,8 +398,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function toggleOrdenacao(chave) {
     if (!chave) return;
-    if (estadoOrdenacao.key === chave) estadoOrdenacao.dir = estadoOrdenacao.dir === 'asc' ? 'desc' : 'asc';
-    else estadoOrdenacao = { key: chave, dir: chave === 'cliente' ? 'asc' : 'desc' };
+    if (estadoOrdenacao.key === chave) {
+      estadoOrdenacao.dir = estadoOrdenacao.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      estadoOrdenacao = { key: chave, dir: chave === 'cliente' ? 'asc' : 'desc' };
+    }
     renderizar(dadosLocais.slice(1));
   }
 
@@ -379,7 +417,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (a === b) return 0;
     if (a === null || a === undefined) return 1;
     if (b === null || b === undefined) return -1;
-    if (typeof a === 'string' && typeof b === 'string') return dir === 'asc' ? a.localeCompare(b, 'pt-BR', { numeric: true }) : b.localeCompare(a, 'pt-BR', { numeric: true });
+    if (typeof a === 'string' && typeof b === 'string') {
+      return dir === 'asc' ? a.localeCompare(b, 'pt-BR', { numeric: true }) : b.localeCompare(a, 'pt-BR', { numeric: true });
+    }
     return dir === 'asc' ? a - b : b - a;
   }
 
@@ -390,6 +430,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return dados.slice().sort((itemA, itemB) => {
       const rA = Array.isArray(itemA.content) ? itemA.content : [];
       const rB = Array.isArray(itemB.content) ? itemB.content : [];
+
       let valorA = null; let valorB = null;
 
       if (chave === 'obra') { valorA = String(rA[COLS.OBRA] || '').trim(); valorB = String(rB[COLS.OBRA] || '').trim(); } 
@@ -421,7 +462,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (!dadosLocais[idx] || !Array.isArray(dadosLocais[idx].content)) return;
     const r = dadosLocais[idx].content;
     const status = String(r[COLS.STATUS_PROPOSTA] || '').trim();
-    if (status === 'FIRMADAS') editar(idx); else abrirResumoProposta(idx);
+    
+    if (status === 'FIRMADAS') {
+      editar(idx);
+    } else {
+      abrirResumoProposta(idx);
+    }
   }
 
   function abrirResumoProposta(idx) {
@@ -445,9 +491,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       { icon: "bi-diagram-3", label: "Etapa", valor: r[COLS.ETAPA] || "-" }
     ];
 
-    if (status === 'ENVIADAS') infoComplementar.push({ icon: "bi-send", label: "Data Enviada", valor: formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || "-" });
-    else if (status === 'FRUSTRADAS') infoComplementar.push({ icon: "bi-calendar-x", label: "Data Frustrada", valor: formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || "-" });
-    else if (status === 'CONCLUIDAS' || status === 'ENTREGUES') {
+    if (status === 'ENVIADAS') {
+       infoComplementar.push({ icon: "bi-send", label: "Data Enviada", valor: formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || "-" });
+    } else if (status === 'FRUSTRADAS') {
+       infoComplementar.push({ icon: "bi-calendar-x", label: "Data Frustrada", valor: formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || "-" });
+    } else if (status === 'CONCLUIDAS' || status === 'ENTREGUES') {
        infoComplementar.push({ icon: "bi-calendar-check", label: "Data Faturamento", valor: formatDateDisplayBR(r[COLS.DATA_FATURAMENTO]) || "-" });
        infoComplementar.push({ icon: "bi-receipt", label: "NF", valor: r[COLS.NF] || "-" });
     }
@@ -457,9 +505,25 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const html = `
       <div class="resumo-modal-scroll">
         <div class="geral-shell">
-          <section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados da Proposta (${status})</h6><div class="geral-grid">${montarCards(infoPrincipal)}</div></section>
-          <section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-info-circle"></i> Situação e Datas</h6><div class="geral-grid">${montarCards(infoComplementar)}</div></section>
-          <section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-wallet2"></i> Visão Financeira</h6><div class="geral-card geral-total-card"><div class="geral-card-label"><i class="bi bi-currency-dollar me-1"></i>Valor da Proposta</div><div class="geral-card-value money">${formatMoneyBR(valor)}</div></div></section>
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados da Proposta (${status})</h6>
+            <div class="geral-grid">
+              ${montarCards(infoPrincipal)}
+            </div>
+          </section>
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-info-circle"></i> Situação e Datas</h6>
+            <div class="geral-grid">
+              ${montarCards(infoComplementar)}
+            </div>
+          </section>
+          <section class="geral-section">
+            <h6 class="geral-section-title"><i class="bi bi-wallet2"></i> Visão Financeira</h6>
+            <div class="geral-card geral-total-card">
+              <div class="geral-card-label"><i class="bi bi-currency-dollar me-1"></i>Valor da Proposta</div>
+              <div class="geral-card-value money">${formatMoneyBR(valor)}</div>
+            </div>
+          </section>
         </div>
       </div>
     `;
@@ -472,7 +536,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
-    const mobileContainer = document.getElementById('mobileCardsContainer'); // Recupera a tag do Mobile
+    const mobileContainer = document.getElementById('mobileCardsContainer');
 
     const dados = dadosOriginais.filter(d => {
       if (currentStatusFilter === 'TODAS') return true;
@@ -483,13 +547,14 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const isGeralView = currentStatusFilter !== 'FIRMADAS';
     
     let html = "";
-    let htmlMobile = ""; // Variável para preencher os cartões
+    let htmlMobile = "";
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
     
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (!isGeralView) {
+      // CABEÇALHO DESKTOP - FIRMADAS
       const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
       head.innerHTML = "<tr>" + labs.map(l => {
         const chave = mapaOrdenacaoCabecalho[l];
@@ -512,13 +577,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
-        // Renderiza a tabela de PC idêntica ao original
+        // LINHA DESKTOP - FIRMADAS
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.CATEGORIA_GERAL])}">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div></td>`;
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
         html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
 
@@ -537,45 +602,63 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           else if (isStatusDate(c)) cl += "st-dt";
 
           let icon = "";
-          if (c === "?") icon = det.alerta_descricao ? '<i class="bi bi-chat-left-text ms-1"></i>' : '';
-          else if (isStatusDate(c) && nomeItem !== "FATUR.") icon = det.pedido ? '<i class="bi bi-truck ms-1"></i>' : '<i class="bi bi-cart-plus ms-1" style="color:red"></i>';
+          if (c === "?") {
+            icon = det.alerta_descricao ? '<i class="bi bi-chat-left-text ms-1"></i>' : '';
+          } else if (isStatusDate(c) && nomeItem !== "FATUR.") {
+            icon = det.pedido ? '<i class="bi bi-truck ms-1"></i>' : '<i class="bi bi-cart-plus ms-1" style="color:red"></i>';
+          }
 
           const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
           const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
           html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
 
-          // Criar os chips do Mobile
+          // Cria os chips do Mobile
           if(c !== "N/A" && c !== "") {
               let mbClass = "mc-chip ";
-              if (c === "OK") mbClass += "mc-ok"; else if (c === "?") mbClass += "mc-qm"; else if (isStatusDate(c)) mbClass += "mc-dt";
+              if (c === "OK") mbClass += "mc-ok";
+              else if (c === "?") mbClass += "mc-qm";
+              else if (isStatusDate(c)) mbClass += "mc-dt";
+              
               miniBadgesMobile += `<div class="${mbClass}"><span class="mc-chip-lbl">${nomeItem}</span><span class="mc-chip-val">${conteudoCelula}</span></div>`;
           }
         }
 
         const obs = r[COLS.OBS] || "";
-        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
+        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${escapeHtml(obs)}">${escapeHtml(obs)}</small></td>`;
         html += `</tr>`;
 
-        // Renderiza Cartão Mobile (Firmadas)
+        // CARTÃO MOBILE - FIRMADAS
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
-                <div class="mc-obra-wrap"><i class="bi bi-folder2-open"></i><span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span></div>
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
+                </div>
                 <span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span>
             </div>
             <div class="mc-body">
                 <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
                 <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
+                
                 <div class="mc-kpi-grid mt-2">
-                    <div class="mc-kpi"><span class="mc-kpi-lbl">Valor</span><span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span></div>
-                    <div class="mc-kpi"><span class="mc-kpi-lbl">Compras</span><span class="mc-kpi-val ${resCompras.valor >= 100 ? "text-success" : "text-warning"}">${resCompras.texto}</span></div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Compras</span>
+                        <span class="mc-kpi-val ${resCompras.valor >= 100 ? "text-success" : "text-warning"}">${resCompras.texto}</span>
+                    </div>
                 </div>
             </div>
             ${miniBadgesMobile ? `<div class="mc-footer-scroll"><div class="mc-chips-container">${miniBadgesMobile}</div></div>` : ''}
-        </div>`;
+        </div>
+        `;
       });
 
     } else {
+      // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
       const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
@@ -594,35 +677,39 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         totVal += val;
         
         const pctOrcado = totalOrcadoGeral > 0 ? ((val / totalOrcadoGeral) * 100).toFixed(1) + "%" : "0.0%";
+        const res = calcularPorcentagem(r);
+        const resCompras = calcularStatusComprasVirtual(r);
         
         let statusBadgeClass = "days-badge shadow-sm ";
         const stProp = r[COLS.STATUS_PROPOSTA] || "";
-        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";
-        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok";
-        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";
-        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";
+        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";        
+        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok"; 
+        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";       
+        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    
         else statusBadgeClass += "bg-light text-secondary";
 
-        // Tabela de PC Original Intocável
+        // LINHA DESKTOP - GERAL
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
-        html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
+        html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><small class="fw-bold">${r[COLS.CATEGORIA_GERAL] || "-"}</small><br><small class="text-muted">${r[COLS.SEGMENTO] || "-"}</small></td>`;
-        html += `<td>${r[COLS.RESPONSAVEL] || "-"}</td>`;
-        html += `<td>${r[COLS.COMPLEXIDADE] || "-"}</td>`;
-        html += `<td>${r[COLS.UF] || "-"}</td>`;
-        html += `<td><div class="text-truncate" style="max-width:120px" title="${r[COLS.ETAPA]}">${r[COLS.ETAPA] || "-"}</div></td>`;
-        html += `<td>${r[COLS.DIAS_PRAZO] || "-"}</td>`;
-        html += `<td>${r[COLS.NF] || "-"}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><small class="fw-bold">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</small><br><small class="text-muted">${escapeHtml(r[COLS.SEGMENTO] || "-")}</small></td>`;
+        html += `<td>${escapeHtml(r[COLS.RESPONSAVEL] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.COMPLEXIDADE] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.UF] || "-")}</td>`;
+        html += `<td><div class="text-truncate" style="max-width:120px" title="${escapeHtml(r[COLS.ETAPA])}">${escapeHtml(r[COLS.ETAPA] || "-")}</div></td>`;
+        html += `<td>${escapeHtml(r[COLS.DIAS_PRAZO] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.NF] || "-")}</td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
         html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
-        if (isFrustrada) html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
+        if (isFrustrada) {
+          html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
+        }
         html += `</tr>`;
 
-        // Lógica do Cartão Mobile Exclusivo (3 palavras do Item)
+        // CARTÃO MOBILE - GERAL (Com o Item de 3 palavras e ... )
         let itemStr = String(r[COLS.ITEM_GERAL] || "").trim();
         let words = itemStr.split(/\s+/);
         let itemDisplay = words.length > 3 ? words.slice(0, 3).join(" ") + "..." : (itemStr || "-");
@@ -630,28 +717,39 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         htmlMobile += `
         <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
             <div class="mc-header">
-                <div class="mc-obra-wrap"><i class="bi bi-folder2-open"></i><span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span></div>
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
+                </div>
                 <span class="${statusBadgeClass}">${stProp || "-"}</span>
             </div>
             <div class="mc-body">
                 <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
                 <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
+                
                 <div class="mc-kpi-grid mt-2">
-                    <div class="mc-kpi"><span class="mc-kpi-lbl">Abertura</span><span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span></div>
-                    <div class="mc-kpi"><span class="mc-kpi-lbl">Valor (${pctOrcado})</span><span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span></div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Abertura</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
                     <div class="mc-kpi" style="grid-column: span 2;">
                         <span class="mc-kpi-lbl">Item</span>
                         <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemStr)}">${escapeHtml(itemDisplay)}</span>
                     </div>
                 </div>
             </div>
-        </div>`;
+        </div>
+        `;
       });
     }
 
     if (dados.length === 0) {
-      body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Nenhum registro encontrado nesta visualização.</span></td></tr>`;
-      if(mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><span class="fw-bold">Nenhuma obra nesta visão.</span></div>`;
+      body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhum registro encontrado nesta visualização.</td></tr>`;
+      if(mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
     } else {
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
@@ -710,6 +808,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function carregar() {
     document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
     
+    // CHAMADA ORIGINAL COM O FILTRO DE ANO ADICIONADO
     callServer('sincronizarEFetch', [currentAnoFilter], data => {
       if (!Array.isArray(data) || data.length === 0) { 
         renderizar([]); 
