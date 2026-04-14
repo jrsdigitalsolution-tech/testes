@@ -38,11 +38,13 @@ const motorBackend = {
           const numObra = String(erp.obra || '').trim();
           if(!numObra) return;
 
-          // --- FILTRO: APENAS OBRAS DE 2026 (IGNORA 2023 E OUTROS) ---
-          const matchNum = numObra.match(/26[.,-]?\d{3,}/);
-          if (!matchNum) return; 
-
-          const numObraLimpo = matchNum[0]; 
+          // --- FILTRO: APENAS OBRAS DE 2026 (DESATIVADO PARA TESTES) ---
+          // const matchNum = numObra.match(/26[.,-]?\d{3,}/);
+          // if (!matchNum) return; 
+          // const numObraLimpo = matchNum[0]; 
+          
+          // MODO TESTE: Puxando TODAS as obras sem filtrar prefixo
+          const numObraLimpo = numObra; 
 
           // --- PREVENÇÃO DE DUPLICATAS (AGRUPAMENTO) ---
           if (obrasProcessadas[numObraLimpo]) {
