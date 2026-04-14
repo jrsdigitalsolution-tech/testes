@@ -5,18 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Carteira</title>
   
-  <!-- Links blindados contra formatação -->
+  <!-- Links corrigidos e blindados -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
-  <!-- REVERTIMOS AQUI: Isso desativa a interferência do Tailwind que quebrou a tabela do PC -->
-  <script src="https//cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <!-- Atualizado para ?v=6 para forçar o celular a atualizar os ícones do modal -->
-  <link rel="stylesheet" href="style.css?v=6">
+  <!-- Versão atualizada para forçar a limpeza do cache do celular -->
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body class="antialiased">
 
@@ -33,7 +32,6 @@
     </div>
 
     <div class="nav-actions">
-      <!-- Menu de Extração de Relatórios -->
       <div class="export-menu-wrap">
         <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios"><i class="bi bi-send-plus"></i></button>
         <div id="menuExtracao" class="extract-menu-panel">
@@ -52,7 +50,6 @@
           </button>
         </div>
       </div>
-      <!-- Novo botão Analítico -->
       <button id="btnAnalytics" type="button" class="btn-extract-modern" onclick="showAnalyticsSoon()" aria-label="Analítico">
         <i class="bi bi-bar-chart"></i>
       </button>
@@ -64,37 +61,37 @@
     <div class="stat-card"><div class="stat-icon icon-valor"><i class="bi bi-currency-dollar"></i></div><div class="stat-content"><p class="stat-label">Valor Exibido</p><h3 id="resumoValor" class="stat-val">0</h3></div></div>
     <div class="stat-card"><div class="stat-icon icon-media"><i class="bi bi-graph-up-arrow"></i></div><div class="stat-content"><p class="stat-label">Valor Médio</p><h3 id="resumoCustoMedio" class="stat-val">0</h3></div></div>
     <div class="stat-card"><div class="stat-icon icon-entrega"><i class="bi bi-truck"></i></div><div class="stat-content"><p class="stat-label">Atraso Crítico</p><h3 id="resumoProxima" class="stat-val">-</h3></div></div>
-</div>
-
-<div class="filter-wrapper-header">
-  <!-- BOTÕES DESKTOP -->
-  <div class="status-filters d-none d-md-flex" id="filterContainer">
-    <button class="filter-btn" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
-    <button class="filter-btn active" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
-    <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
-    <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
-    <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
-    <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
   </div>
 
-  <!-- DROPDOWN MOBILE -->
-  <div class="status-select-wrapper shadow-sm d-md-none">
-    <i class="bi bi-funnel-fill"></i>
-    <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
-      <option value="FIRMADAS">Firmadas</option>
-      <option value="TODAS" selected>Todas</option>
-      <option value="ENVIADAS">Enviadas</option>
-      <option value="FRUSTRADAS">Frustradas</option>
-      <option value="ENTREGUES">Entregues</option>
-      <option value="CONCLUIDAS">Concluídas</option>
-    </select>
+  <div class="filter-wrapper-header">
+    <!-- BOTÕES DESKTOP -->
+    <div class="status-filters d-none d-md-flex" id="filterContainer">
+      <button class="filter-btn" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
+      <button class="filter-btn active" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
+      <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
+      <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
+      <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
+      <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
+    </div>
+
+    <!-- DROPDOWN MOBILE EXCLUSIVO -->
+    <div class="status-select-wrapper shadow-sm d-md-none">
+      <i class="bi bi-funnel-fill"></i>
+      <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
+        <option value="FIRMADAS">Firmadas</option>
+        <option value="TODAS" selected>Todas</option>
+        <option value="ENVIADAS">Enviadas</option>
+        <option value="FRUSTRADAS">Frustradas</option>
+        <option value="ENTREGUES">Entregues</option>
+        <option value="CONCLUIDAS">Concluídas</option>
+      </select>
+    </div>
+    <div class="table-scroll-label d-none d-md-block">Arraste para ver mais →</div>
   </div>
 
-  <div class="table-scroll-label d-none d-md-block">Arraste para ver mais →</div>
-</div>
-
-<div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
-  <table class="table table-hover mb-0">
+  <!-- VISÃO DESKTOP (Tabela) -->
+  <div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
+    <table class="table table-hover mb-0">
       <thead id="tabHead"></thead>
       <tbody id="tabBody" class="animate-fade-up">
         <tr>
@@ -251,26 +248,25 @@
         <div class="extract-choice-divider"></div>
 
         <div class="extract-choice-form d-none" id="blocoObraExtracao">
-        <label for="inputObraExtracao" class="form-label fw-semibold text-secondary mb-2">Número da obra</label>
-        <div class="input-group input-group-lg">
-          <span class="input-group-text"><i class="bi bi-search"></i></span>
-          <input type="text" class="form-control" id="inputObraExtracao" placeholder="26.001">
+          <label for="inputObraExtracao" class="form-label fw-semibold text-secondary mb-2">Número da obra</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" id="inputObraExtracao" placeholder="26.001">
+          </div>
+          <div class="extract-choice-hint">Use o número exatamente como aparece na tabela.</div>
         </div>
-        <div class="extract-choice-hint">Use o número exatamente como aparece na tabela.</div>
       </div>
-    </div>
-    <div class="modal-footer border-0 pb-4">
-      <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
-      <button type="button" class="btn btn-primary px-4" id="btnConfirmarExtracao" onclick="confirmarExtracaoRelatorio()">Continuar</button>
+      <div class="modal-footer border-0 pb-4">
+        <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary px-4" id="btnConfirmarExtracao" onclick="confirmarExtracaoRelatorio()">Continuar</button>
+      </div>
     </div>
   </div>
 </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Atualizado para ?v=6 para forçar o celular a baixar a versão nova -->
-<script src="motorbackend.js?v=6"></script>
-<script src="script.js?v=6"></script>
+<script src="motorbackend.js?v=10"></script>
+<script src="script.js?v=10"></script>
 
 </body>
 </html>
