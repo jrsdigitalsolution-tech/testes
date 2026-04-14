@@ -48,13 +48,11 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 #txtDataAtual { color: #475569; }
 .week-badge { color: #64748b; }
 
-/* Ícones de ação obrigatoriamente à direita, perfeitamente alinhados */
 .nav-actions { 
   display: flex; align-items: center; gap: 6px; justify-content: flex-end; 
   flex-shrink: 0; flex-wrap: nowrap; margin-left: auto;
 }
 
-/* BLINDAGEM: Oculta os botões antigos caso ainda estejam no HTML */
 .btn-refresh-modern, .btn-add-pwa { display: none !important; }
 
 .export-menu-wrap {
@@ -96,7 +94,8 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 
 /* --- FILTROS --- */
 .filter-wrapper-header {
-  margin-bottom: 12px; padding: 0 20px;
+  display: flex; justify-content: space-between; align-items: flex-end; 
+  gap: 15px; margin-bottom: 12px; padding: 0 20px;
 }
 
 .status-filters {
@@ -120,6 +119,20 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 .filter-btn.active::after {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0; 
   height: 3px; background-color: var(--primary); border-radius: 3px 3px 0 0;
+}
+
+.status-select-wrapper {
+  position: relative; display: flex; align-items: center; background: white;
+  border: 1px solid #cbd5e1; border-radius: 12px; padding: 0; transition: all 0.2s ease;
+}
+.status-select-wrapper i { position: absolute; left: 14px; color: var(--primary); font-size: 1rem; pointer-events: none; }
+.status-select {
+  appearance: none; -webkit-appearance: none; background: transparent; border: none;
+  padding: 10px 36px 10px 38px; font-size: 0.85rem; font-weight: 800; color: var(--primary);
+  text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer; width: 100%; outline: none;
+}
+.status-select-wrapper::after {
+  content: '\F282'; font-family: "bootstrap-icons"; position: absolute; right: 14px; color: #64748b; pointer-events: none; font-size: 0.85rem; font-weight: bold;
 }
 
 .table-scroll-label {
@@ -173,13 +186,42 @@ body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; c
 
 /* BADGES DE STATUS */
 .days-badge { font-weight: 800; font-size: 0.7rem; border-radius: 4px; padding: 2px 8px; display: inline-block; min-width: 110px; text-transform: uppercase; text-align: center; }
-.days-urgent { background: #fee2e2; color: #ef4444; } /* Vermelho */
-.days-ok { background: #d1fae5; color: #10b981; } /* Verde */
-.days-info { background: #eff6ff; color: #2563eb; } /* Azul */
-.days-warning { background: #ffedd5; color: #ea580c; } /* Laranja */
+.days-urgent { background: #fee2e2; color: #ef4444; } 
+.days-ok { background: #d1fae5; color: #10b981; } 
+.days-info { background: #eff6ff; color: #2563eb; } 
+.days-warning { background: #ffedd5; color: #ea580c; } 
 
 .status-pill { font-weight: 800; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .st-ok { color: #10b981; } .st-na { color: #94a3b8; } .st-dt { color: #f59e0b; }
+
+/* --- CARTÕES EXCLUSIVOS PARA DISPOSITIVOS MÓVEIS --- */
+.mobile-cards-wrapper { display: flex; flex-direction: column; gap: 14px; }
+.mc-card {
+    background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04); transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.mc-card:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06); background: #f8fafc; }
+.mc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; }
+.mc-obra-wrap { display: flex; align-items: center; gap: 6px; color: var(--primary); }
+.mc-obra-wrap i { font-size: 1.1rem; }
+.mc-obra-title { font-weight: 900; font-size: 1rem; letter-spacing: 0.02em; }
+.mc-card .days-badge { min-width: unset; padding: 4px 10px; font-size: 0.65rem; border-radius: 999px; }
+.mc-body { display: flex; flex-direction: column; gap: 4px; }
+.mc-client { font-weight: 800; font-size: 0.95rem; color: #1e293b; line-height: 1.2; }
+.mc-category { font-size: 0.75rem; color: #64748b; font-weight: 600; }
+.mc-kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #f1f5f9; }
+.mc-kpi { display: flex; flex-direction: column; gap: 2px; }
+.mc-kpi-lbl { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #94a3b8; letter-spacing: 0.02em; }
+.mc-kpi-val { font-size: 0.9rem; font-weight: 800; color: #334155; }
+.mc-footer-scroll { margin-top: 14px; margin-left: -16px; margin-right: -16px; padding: 0 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.mc-footer-scroll::-webkit-scrollbar { display: none; }
+.mc-chips-container { display: inline-flex; gap: 8px; padding-bottom: 4px; }
+.mc-chip { display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; min-width: 80px; flex-shrink: 0; }
+.mc-chip-lbl { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; color: #64748b; margin-bottom: 2px; }
+.mc-chip-val { font-size: 0.75rem; font-weight: 800; }
+.mc-ok { border-color: #bbf7d0; background: #f0fdf4; } .mc-ok .mc-chip-val { color: #10b981; }
+.mc-qm { border-color: #fecaca; background: #fef2f2; } .mc-qm .mc-chip-val { color: #ef4444; }
+.mc-dt { border-color: #fde68a; background: #fffbeb; } .mc-dt .mc-chip-val { color: #f59e0b; }
 
 /* --- MODAIS & INTERATIVOS --- */
 .material-box { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column; }
@@ -219,7 +261,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (min-width: 1600px) { .modal-xl { max-width: 1540px; } }
 
 @media (max-width: 768px) {
-  /* Cabecalho Mobile */
   .navbar-custom { padding: 10px 14px; gap: 10px; }
   .header-brand { column-gap: 10px; row-gap: 2px; }
   .logo-img { max-height: 38px; }
@@ -231,23 +272,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .btn-extract-modern i { font-size: 1.15rem; }
   
   .stat-grid { padding: 10px 14px; gap: 10px; }
-  .filter-wrapper-header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 12px; padding: 0 14px; }
-  .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; margin-top: 4px; }
-  .table-viewport { margin: 0 14px 20px 14px; }
   
-  /* Restaura o layout original do Modal, modificando apenas a ocultação do texto */
+  /* Mantém o comportamento nativo dos botões do modal no mobile (Ajustado) */
+  .filter-wrapper-header { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; padding: 0 14px; }
+  .table-scroll-label { text-align: left; width: 100%; font-size: 0.75rem; margin-top: 4px; }
+  
   .modal-xl { max-width: 98vw; }
   #modalObra .modal-body { padding: 1rem; }
   #modalObra .modal-header { align-items: flex-start; }
   #modalObra .modal-header .ms-auto { flex-wrap: wrap; justify-content: flex-end; }
+  
+  /* ESCONDE O TEXTO DOS BOTOES DO MODAL E AUMENTA O ICONE */
+  .modal-top-action span { display: none !important; }
+  .modal-top-action i { font-size: 1.45rem !important; }
+  
   #modalObra .modal-footer { gap: 10px; }
   #modalObra .modal-footer .btn { flex: 1 1 auto; }
   .material-label { font-size: 0.68rem; }
-  
-  /* Oculta os textos dos botões do cabeçalho no mobile e ajusta os ícones */
-  .modal-top-action span { display: none !important; }
-  .modal-top-action i { font-size: 1.45rem !important; }
-  .modal-header-actions { gap: 14px !important; }
   
   #modalResumoGeral .modal-dialog { min-height: calc(100dvh - 0.35rem); margin: 0.15rem auto; }
   #modalResumoGeral .modal-content { height: calc(100dvh - 0.3rem); max-height: calc(100dvh - 0.3rem); border-radius: 16px; }
@@ -264,8 +305,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .stat-label { font-size: 0.62rem; }
   .stat-val { font-size: 1.05rem; }
   
-  .status-filters { gap: 16px; }
-  .filter-btn { font-size: 0.8rem; padding: 8px 2px; }
+  .status-select { font-size: 0.8rem; padding: 10px 36px 10px 38px; }
 
   #modalObra .modal-dialog { margin: 0.4rem; }
   #modalObra .modal-content { border-radius: 12px; }
@@ -404,10 +444,3 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .extract-choice-card i { width: 40px; height: 40px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; background: #f1f7ff; color: #0d6efd; font-size: 1.05rem; flex-shrink: 0; }
 .extract-choice-card span { display:flex; flex-direction:column; gap: 2px; }
 .extract-choice-card strong { font-size: .93rem; line-height: 1.15; }
-
-@media (max-width: 768px) {
-  .extract-menu-panel { right: -4px; min-width: 220px; }
-  .btn-extract-modern { width: 38px; height: 38px; }
-  .extract-choice-grid { grid-template-columns: 1fr; }
-  .extract-choice-modal .modal-header, .extract-choice-modal .modal-footer, .extract-choice-modal .modal-body { padding-left: 16px; padding-right: 16px; }
-}
