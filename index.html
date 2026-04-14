@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Carteira</title>
   
-  <!-- Links corrigidos e blindados -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <!-- Links blindados contra formatação -->
+  <link href="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https&#58;//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- O link do Tailwind está protegido para não quebrar a tabela do PC -->
+  <script src="https&#58;//cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <!-- Versão atualizada para forçar a limpeza do cache do celular -->
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body class="antialiased">
 
@@ -23,15 +23,16 @@
 <div id="mainContent">
   <nav class="navbar-custom">
     <div class="header-brand">
-      <img src="https://res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
+      <img src="https&#58;//res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
       <h1 class="header-title">Carteira</h1>
       <div class="date-group header-date-group">
         <span id="txtSemanaAtual" class="week-badge">Semana -</span>
         <span id="txtDataAtual">Carregando...</span>
       </div>
-    </div>
+    </div> 
 
     <div class="nav-actions">
+      <!-- Menu de Extração de Relatórios -->
       <div class="export-menu-wrap">
         <button id="btnExtrair" type="button" class="btn-extract-modern" onclick="toggleMenuExtracao(event)" aria-label="Extrair relatórios"><i class="bi bi-send-plus"></i></button>
         <div id="menuExtracao" class="extract-menu-panel">
@@ -50,7 +51,20 @@
           </button>
         </div>
       </div>
+      <!-- Novo botão Analítico -->
       <button id="btnAnalytics" type="button" class="btn-extract-modern" onclick="showAnalyticsSoon()" aria-label="Analítico">
+        <i class="bi bi-bar-chart"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-icon icon-obras"><i class="bi bi-buildings-fill"></i></div><div class="stat-content"><p class="stat-label">Obras Exibidas</p><h3 id="resumoObras" class="stat-val">0</h3></div></div>
+    <div class="stat-card"><div class="stat-icon icon-valor"><i class="bi bi-currency-dollar"></i></div><div class="stat-content"><p class="stat-label">Valor Exibido</p><h3 id="resumoValor" class="stat-val">0</h3></div></div>
+    <div class="stat-card"><div class="stat-icon icon-media"><i class="bi bi-graph-up-arrow"></i></div><div class="stat-content"><p class="stat-label">Valor Médio</p><h3 id="resumoCustoMedio" class="stat-val">0</h3></div></div>
+    <div class="stat-card"><div class="stat-icon icon-entrega"><i class="bi bi-truck"></i></div><div class="stat-content"><p class="stat-label">Atraso Crítico</p><h3 id="resumoProxima" class="stat-val">-</h3></div></div>
+  </div>
+
   <div class="filter-wrapper-header" style="flex-wrap: wrap; gap: 10px;">
     <!-- BOTÕES DESKTOP -->
     <div class="status-filters d-none d-md-flex" id="filterContainer">
@@ -89,7 +103,7 @@
     <div class="table-scroll-label d-none d-md-block ms-auto align-self-end mb-1">Arraste para ver mais →</div>
   </div>
 
-  <!-- VISÃO DESKTOP (Tabela) -->
+  <!-- VISÃO DESKTOP (Tabela Original Restaurada) -->
   <div class="table-viewport shadow-sm transform-gpu d-none d-md-block">
     <table class="table table-hover mb-0">
       <thead id="tabHead"></thead>
@@ -104,7 +118,7 @@
     </table>
   </div>
 
-  <!-- VISÃO MOBILE (Cartões Nativos) -->
+  <!-- VISÃO MOBILE (Cartões Nativos Restaurados) -->
   <div id="mobileCardsContainer" class="d-md-none mobile-cards-wrapper px-3 pb-4">
     <div class="text-center py-5 text-muted">
       <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
@@ -120,8 +134,8 @@
       <div class="modal-header bg-light">
         <h6 class="fw-bold text-primary mb-0" id="modalObraTitle">CADASTRO DE OBRA</h6>
         <div class="ms-auto d-flex gap-2 align-items-center modal-header-actions">
-          <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline">Detalhe Financeiro</span></button>
-          <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline">Base Geral</span></button>
+          <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span>Detalhe Financeiro</span></button>
+          <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span>Base Geral</span></button>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
       </div>
@@ -264,9 +278,9 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="motorbackend.js?v=10"></script>
-<script src="script.js?v=10"></script>
+<script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="motorbackend.js?v=20"></script>
+<script src="script.js?v=20"></script>
 
 </body>
 </html>
