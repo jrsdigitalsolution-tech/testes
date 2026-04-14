@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Carteira</title>
   
-  <!-- Links blindados contra formatação (Original Mantido) -->
+  <!-- Links blindados contra formatação -->
   <link href="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https&#58;//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
   
@@ -14,8 +14,7 @@
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <!-- Versão alterada para forçar o telemóvel a limpar cache -->
-  <link rel="stylesheet" href="style.css?v=35">
+  <link rel="stylesheet" href="style.css?v=50">
 </head>
 <body class="antialiased">
 
@@ -24,12 +23,12 @@
   <nav class="navbar-custom">
     <div class="header-brand">
       <img src="https&#58;//res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
-      <h1 class="header-title">Carteira teste1</h1>
+      <h1 class="header-title">Carteira</h1>
       <div class="date-group header-date-group">
         <span id="txtSemanaAtual" class="week-badge">Semana -</span>
         <span id="txtDataAtual">Carregando...</span>
       </div>
-    </div>
+    </div> 
 
     <div class="nav-actions">
       <!-- Menu de Extração de Relatórios -->
@@ -65,33 +64,33 @@
     <div class="stat-card"><div class="stat-icon icon-entrega"><i class="bi bi-truck"></i></div><div class="stat-content"><p class="stat-label">Atraso Crítico</p><h3 id="resumoProxima" class="stat-val">-</h3></div></div>
   </div>
 
-  <!-- FILTROS: Layout Seguro usando Bootstrap puro para manter o PC perfeito -->
-  <div class="filter-wrapper-header d-flex flex-wrap gap-2 align-items-end">
+  <div class="filter-wrapper-header">
     
-    <!-- ESQUERDA (PC): Botões Originais Intactos -->
-    <div class="status-filters d-none d-md-flex flex-grow-1" id="filterContainer" style="margin-bottom: 0;">
-      <button class="filter-btn" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
-      <button class="filter-btn active" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
+    <!-- ESQUERDA (PC): Botões Originais -->
+    <div class="status-filters d-none d-md-flex" id="filterContainer">
+      <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
+      <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
       <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
       <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
       <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
       <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
     </div>
 
-    <!-- EXCLUSIVO MOBILE: OS DOIS DROPDOWNS LADO A LADO -->
-    <div class="d-flex d-md-none gap-2 w-100 mb-2">
-      <div class="status-select-wrapper shadow-sm flex-grow-1">
+    <!-- MOBILE: Filtro de Status + Filtro de Ano -->
+    <div class="d-flex d-md-none gap-2 w-100">
+      <div class="status-select-wrapper shadow-sm" style="flex: 1;">
         <i class="bi bi-funnel-fill"></i>
         <select class="status-select" id="statusFilter" onchange="setFilter(this.value)">
-          <option value="FIRMADAS">Firmadas</option>
-          <option value="TODAS" selected>Todas</option>
+          <option value="FIRMADAS" selected>Firmadas</option>
+          <option value="TODAS">Todas</option>
           <option value="ENVIADAS">Enviadas</option>
           <option value="FRUSTRADAS">Frustradas</option>
           <option value="ENTREGUES">Entregues</option>
           <option value="CONCLUIDAS">Concluídas</option>
         </select>
       </div>
-      <div class="status-select-wrapper shadow-sm" style="width: 115px; flex-shrink: 0;">
+
+      <div class="status-select-wrapper shadow-sm" style="flex: 0 0 110px;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select" id="anoFilterMobile" onchange="mudarAno(this.value)" style="padding-left: 36px; padding-right: 14px;">
           <option value="TODOS" selected>Todos</option>
@@ -102,9 +101,9 @@
       </div>
     </div>
 
-    <!-- DIREITA (PC): Filtro de Ano + Texto (Alinhados perfeitamente) -->
-    <div class="d-none d-md-flex align-items-center gap-3 ms-auto">
-      <div class="status-select-wrapper shadow-sm mb-0" style="min-width: 120px;">
+    <!-- DIREITA (PC): Filtro de Ano e Texto Arraste -->
+    <div class="d-none d-md-flex align-items-center gap-3">
+      <div class="status-select-wrapper shadow-sm" style="min-width: 120px;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select py-1" id="anoFilterPC" onchange="mudarAno(this.value)" style="padding-left: 34px; padding-top: 8px; padding-bottom: 8px;">
           <option value="TODOS" selected>Histórico</option>
@@ -113,7 +112,7 @@
           <option value="24">2024</option>
         </select>
       </div>
-      <div class="table-scroll-label mb-0 pb-1">Arraste para ver mais →</div>
+      <div class="table-scroll-label mb-0">Arraste para ver mais →</div>
     </div>
 
   </div>
@@ -132,7 +131,7 @@
     </table>
   </div>
 
-  <!-- VISÃO MOBILE (Cartões Nativos) -->
+  <!-- CONTAINER EXCLUSIVO MOBILE -->
   <div id="mobileCardsContainer" class="d-md-none mobile-cards-wrapper px-3 pb-4">
     <div class="text-center py-5 text-muted">
       <div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
@@ -148,9 +147,8 @@
       <div class="modal-header bg-light">
         <h6 class="fw-bold text-primary mb-0" id="modalObraTitle">CADASTRO DE OBRA</h6>
         <div class="ms-auto d-flex gap-2 align-items-center modal-header-actions">
-          <!-- Textos envoltos em d-none d-md-inline para desaparecer no mobile -->
-          <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline">Detalhe Financeiro</span></button>
-          <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline">Base Geral</span></button>
+          <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline ms-1">Detalhe Financeiro</span></button>
+          <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline ms-1">Base Geral</span></button>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
       </div>
@@ -294,8 +292,8 @@
 </div>
 
 <script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="motorbackend.js?v=35"></script>
-<script src="script.js?v=35"></script>
+<script src="motorbackend.js?v=40"></script>
+<script src="script.js?v=40"></script>
 
 </body>
 </html>
