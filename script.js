@@ -1,11 +1,11 @@
 const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIXADORES", "SIST. ELÉT.", "PEÇAS REP.", "SERV.", "MONT.", "FATUR."];
+  let currentStatusFilter = 'TODAS'; // Inicia sempre em TODAS
+  let currentAnoFilter = 'TODOS'; // Inicia trazendo todo o histórico
 
-  const COLS = Object.freeze({
-    DATA: 0, OBRA: 1, CLIENTE: 2, VALOR: 3, DIAS_PRAZO: 4, ITEM_INICIO: 5, ITEM_FIM: 16, OBS: 17, DETALHES_JSON: 18, CPMV: 19, ITEM_GERAL: 20, CATEGORIA_GERAL: 21,
-    STATUS_PROPOSTA: 22, DATA_ABERTURA: 23, SEGMENTO: 24, RESPONSAVEL: 25, COMPLEXIDADE: 26, UF: 27, ETAPA: 28, NF: 29, DATA_FRUSTRADA: 30, DATA_ENVIADA: 31, DATA_FATURAMENTO: 32
-  });
-  
-  let currentStatusFilter = 'TODAS';
+  function mudarAno(ano) {
+    currentAnoFilter = ano;
+    carregar(); // Refaz a requisição ao servidor aplicando o filtro de ano
+  }
 
   function setFilter(status) {
     currentStatusFilter = status;
@@ -675,9 +675,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function carregar() {
-    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
+    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao ERP...</span></td></tr>`;
     
-    callServer('sincronizarEFetch', [], data => {
+    // Agora enviamos o filtro do ano para o Motor
+    callServer('sincronizarEFetch', [currentAnoFilter], data => {
       if (!Array.isArray(data) || data.length === 0) { 
         notify("Nenhuma obra encontrada na View do ERP."); 
         renderizar([]); 
