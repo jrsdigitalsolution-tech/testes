@@ -60,6 +60,49 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return err.message || err.toString() || "Erro inesperado.";
   }
 
+  function setMobileFeedback(html) {
+    const mobileContainer = document.getElementById('mobileCardsContainer');
+    if (mobileContainer) mobileContainer.innerHTML = html;
+  }
+
+  function renderizarCarregamentoTela(mensagem = 'Conectando ao Supabase (ERP)...') {
+    const htmlDesktop = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">${escapeHtml(mensagem)}</span></td></tr>`;
+    const htmlMobile = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">${escapeHtml(mensagem)}</span></div>`;
+
+    const tabBody = document.getElementById('tabBody');
+    if (tabBody) tabBody.innerHTML = htmlDesktop;
+    setMobileFeedback(htmlMobile);
+  }
+
+  function renderizarFalhaTela(titulo, mensagem, iconClass = 'bi bi-database-x') {
+    const tituloSeguro = escapeHtml(titulo || 'Falha ao carregar os dados');
+    const mensagemSegura = escapeHtml(mensagem || 'Erro inesperado.');
+
+    const htmlDesktop = `
+      <tr><td colspan="20" class="text-center py-5 text-danger">
+        <i class="${iconClass} me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
+        <h5 class="fw-bold">${tituloSeguro}</h5>
+        <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
+          ${mensagemSegura}
+        </span>
+      </td></tr>
+    `;
+
+    const htmlMobile = `
+      <div class="text-center py-5 px-3 text-danger">
+        <i class="${iconClass} d-block mb-3" style="font-size: 2.7rem;"></i>
+        <h6 class="fw-bold mb-2">${tituloSeguro}</h6>
+        <p class="text-muted mb-0">${mensagemSegura}</p>
+      </div>
+    `;
+
+    const tabBody = document.getElementById('tabBody');
+    if (tabBody) tabBody.innerHTML = htmlDesktop;
+    setMobileFeedback(htmlMobile);
+  }
+
+
+
   function callServer(method, args, onSuccess, onError) {
     let settled = false;
     const timeoutMs = method === 'sincronizarEFetch' ? 30000 : 20000;
@@ -85,14 +128,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     try {
       if (typeof window.motorBackend === "undefined") {
         clearTimeout(timer);
-        const diagHtml = `
-          <div style="text-align:center; padding: 30px;">
-            <i class="bi bi-file-earmark-x text-danger d-block mb-3" style="font-size: 3.5rem;"></i>
-            <h4 class="text-danger fw-bold">ARQUIVO DO MOTOR NÃO ENCONTRADO</h4>
-            <p class="text-muted mt-2">O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.</p>
-          </div>
-        `;
-        document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
+        renderizarFalhaTela(
+          'ARQUIVO DO MOTOR NÃO ENCONTRADO',
+          'O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.',
+          'bi bi-file-earmark-x'
+        );
         finalizeError(`motorbackend.js ausente.`);
         return;
       }
@@ -294,31 +334,55 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   };
   
   let modalUI; let modalResumoUI; let modalCompraUI; let modalPendenciaUI; let modalObraEl;
-  
-  function initModais() {
-    modalUI = new bootstrap.Modal(document.getElementById('modalObra'));
-    modalResumoUI = new bootstrap.Modal(document.getElementById('modalResumoGeral'));
-    modalCompraUI = new bootstrap.Modal(document.getElementById('modalCompraItem'));
-    modalPendenciaUI = new bootstrap.Modal(document.getElementById('modalPendenciaItem'));
-    modalObraEl = document.getElementById('modalObra');
+  const NESTED_MODAL_IDS = ['modalCompraItem', 'modalResumoGeral', 'modalPendenciaItem'];
 
-    const nestedModalIds = ['modalCompraItem', 'modalResumoGeral', 'modalPendenciaItem'];
-    nestedModalIds.forEach(modalId => {
-      const modalEl = document.getElementById(modalId);
-      if (!modalEl) return;
-      modalEl.addEventListener('show.bs.modal', function () {
-        if (modalObraEl && modalObraEl.classList.contains('show')) document.body.classList.add('child-modal-open');
-      });
-      modalEl.addEventListener('hidden.bs.modal', function () {
-        const aindaTemModalFilhoAberto = nestedModalIds.some(id => { const el = document.getElementById(id); return el && el.classList.contains('show'); });
-        if (!aindaTemModalFilhoAberto) document.body.classList.remove('child-modal-open');
-        if (modalObraEl && modalObraEl.classList.contains('show')) document.body.classList.add('modal-open');
-      });
+  function sincronizarEstadoVisualModais() {
+    const modalObraAberto = !!(modalObraEl && modalObraEl.classList.contains('show'));
+    const modalFilhoAberto = NESTED_MODAL_IDS.some(id => {
+      const el = document.getElementById(id);
+      return !!(el && el.classList.contains('show'));
     });
 
-    if (modalObraEl) {
-      modalObraEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('child-modal-open'); });
+    const aplicarEstadoFilho = modalObraAberto && modalFilhoAberto;
+    document.body.classList.toggle('child-modal-open', aplicarEstadoFilho);
+    document.body.classList.toggle('modal-open-blur', aplicarEstadoFilho);
+
+    if (modalObraAberto) {
+      document.body.classList.add('modal-open');
     }
+  }
+  
+  function initModais() {
+    if (!window.bootstrap?.Modal) return;
+
+    const modalObraNode = document.getElementById('modalObra');
+    const modalResumoNode = document.getElementById('modalResumoGeral');
+    const modalCompraNode = document.getElementById('modalCompraItem');
+    const modalPendenciaNode = document.getElementById('modalPendenciaItem');
+
+    if (!modalObraNode || !modalResumoNode || !modalCompraNode || !modalPendenciaNode) return;
+
+    modalUI = new bootstrap.Modal(modalObraNode);
+    modalResumoUI = new bootstrap.Modal(modalResumoNode);
+    modalCompraUI = new bootstrap.Modal(modalCompraNode);
+    modalPendenciaUI = new bootstrap.Modal(modalPendenciaNode);
+    modalObraEl = modalObraNode;
+
+    NESTED_MODAL_IDS.forEach(modalId => {
+      const modalEl = document.getElementById(modalId);
+      if (!modalEl) return;
+      modalEl.addEventListener('show.bs.modal', sincronizarEstadoVisualModais);
+      modalEl.addEventListener('shown.bs.modal', sincronizarEstadoVisualModais);
+      modalEl.addEventListener('hide.bs.modal', sincronizarEstadoVisualModais);
+      modalEl.addEventListener('hidden.bs.modal', sincronizarEstadoVisualModais);
+    });
+
+    modalObraEl.addEventListener('show.bs.modal', sincronizarEstadoVisualModais);
+    modalObraEl.addEventListener('shown.bs.modal', sincronizarEstadoVisualModais);
+    modalObraEl.addEventListener('hidden.bs.modal', function () {
+      document.body.classList.remove('child-modal-open', 'modal-open-blur');
+      sincronizarEstadoVisualModais();
+    });
   }
 
   function configurarCabecalhoData() {
@@ -401,7 +465,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (estadoOrdenacao.key === chave) {
       estadoOrdenacao.dir = estadoOrdenacao.dir === 'asc' ? 'desc' : 'asc';
     } else {
-      estadoOrdenacao = { key: chave, dir: chave === 'cliente' ? 'asc' : 'desc' };
+      estadoOrdenacao = { key: chave, dir: (chave === 'cliente' || chave === 'obra') ? 'asc' : 'desc' };
     }
     renderizar(dadosLocais.slice(1));
   }
@@ -411,6 +475,61 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (!txt || txt === "N/A" || txt === "OK" || txt === "?") return null;
     const d = parseDataUniversal(txt);
     return d ? d.getTime() : null;
+  }
+
+  function extrairChaveOrdenacaoObra(valor) {
+    const raw = String(valor || '').trim();
+    if (!raw) {
+      return { hasCanon: false, ano: Number.MAX_SAFE_INTEGER, sequencia: Number.MAX_SAFE_INTEGER, display: '', raw: '' };
+    }
+
+    const match = raw.match(/(?:^|[^0-9])(?:ob\s*ra\s*)?((20\d{2}|\d{2})\s*[.,\-\/]\s*(\d{1,5})|(20\d{2}|\d{2})\s+(\d{1,5}))(?!\d)/i);
+    if (!match) {
+      return { hasCanon: false, ano: Number.MAX_SAFE_INTEGER, sequencia: Number.MAX_SAFE_INTEGER, display: raw, raw };
+    }
+
+    let ano = String(match[2] || match[4] || '').trim();
+    const seqBruta = String(match[3] || match[5] || '').trim();
+    if (!ano || !seqBruta) {
+      return { hasCanon: false, ano: Number.MAX_SAFE_INTEGER, sequencia: Number.MAX_SAFE_INTEGER, display: raw, raw };
+    }
+
+    if (ano.length === 4) ano = ano.slice(-2);
+
+    const anoNum = parseInt(ano, 10);
+    const seqNum = parseInt(seqBruta, 10);
+    if (!Number.isFinite(anoNum) || !Number.isFinite(seqNum)) {
+      return { hasCanon: false, ano: Number.MAX_SAFE_INTEGER, sequencia: Number.MAX_SAFE_INTEGER, display: raw, raw };
+    }
+
+    return {
+      hasCanon: true,
+      ano: anoNum,
+      sequencia: seqNum,
+      display: `${String(anoNum).padStart(2, '0')}.${String(seqNum).padStart(Math.max(3, seqBruta.length), '0')}`,
+      raw
+    };
+  }
+
+  function compararObrasCanonicas(valorA, valorB, dir = 'asc') {
+    const a = extrairChaveOrdenacaoObra(valorA);
+    const b = extrairChaveOrdenacaoObra(valorB);
+
+    let resultado = 0;
+
+    if (a.hasCanon && b.hasCanon) {
+      if (a.ano !== b.ano) resultado = a.ano - b.ano;
+      else if (a.sequencia !== b.sequencia) resultado = a.sequencia - b.sequencia;
+      else resultado = a.raw.localeCompare(b.raw, 'pt-BR', { numeric: true, sensitivity: 'base' });
+    } else if (a.hasCanon && !b.hasCanon) {
+      resultado = -1;
+    } else if (!a.hasCanon && b.hasCanon) {
+      resultado = 1;
+    } else {
+      resultado = a.raw.localeCompare(b.raw, 'pt-BR', { numeric: true, sensitivity: 'base' });
+    }
+
+    return dir === 'asc' ? resultado : -resultado;
   }
 
   function compararValores(a, b, dir = 'asc') {
@@ -433,7 +552,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
       let valorA = null; let valorB = null;
 
-      if (chave === 'obra') { valorA = String(rA[COLS.OBRA] || '').trim(); valorB = String(rB[COLS.OBRA] || '').trim(); } 
+      if (chave === 'obra') {
+        const resultadoObra = compararObrasCanonicas(rA[COLS.OBRA], rB[COLS.OBRA], estadoOrdenacao.dir);
+        if (resultadoObra !== 0) return resultadoObra;
+        valorA = String(rA[COLS.OBRA] || '').trim();
+        valorB = String(rB[COLS.OBRA] || '').trim();
+      } 
       else if (chave === 'cliente') { valorA = String(rA[COLS.CLIENTE] || '').trim(); valorB = String(rB[COLS.CLIENTE] || '').trim(); } 
       else if (chave === 'valor') { valorA = parseMoneyFlexible(rA[COLS.VALOR]); valorB = parseMoneyFlexible(rB[COLS.VALOR]); } 
       else if (chave === 'itemGeral') { valorA = String(rA[COLS.ITEM_GERAL] || '').trim(); valorB = String(rB[COLS.ITEM_GERAL] || '').trim(); } 
@@ -454,7 +578,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
       const resultado = compararValores(valorA, valorB, estadoOrdenacao.dir);
       if (resultado !== 0) return resultado;
-      return String(rA[COLS.OBRA] || '').localeCompare(String(rB[COLS.OBRA] || ''), 'pt-BR', { numeric: true });
+      return compararObrasCanonicas(rA[COLS.OBRA], rB[COLS.OBRA], 'asc');
     });
   }
 
@@ -806,11 +930,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function carregar() {
-    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
+    renderizarCarregamentoTela('Conectando ao Supabase (ERP)...');
     
     // CHAMADA ORIGINAL COM O FILTRO DE ANO ADICIONADO
     callServer('sincronizarEFetch', [currentAnoFilter], data => {
       if (!Array.isArray(data) || data.length === 0) { 
+        dadosLocais = [];
         renderizar([]); 
         return; 
       }
@@ -818,16 +943,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       renderizar(dadosLocais.slice(1));
     }, msg => {
       if (msg === "motorbackend.js ausente.") return;
-      document.getElementById('tabBody').innerHTML = `
-        <tr><td colspan="20" class="text-center py-5 text-danger">
-          <i class="bi bi-database-x me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
-          <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
-          <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
-            Motivo Retornado pelo Banco:<br>
-            <strong class="text-danger">${escapeHtml(msg)}</strong>
-          </span><br>
-        </td></tr>
-      `;
+      dadosLocais = [];
+      renderizarFalhaTela('Falha ao Ler a Tabela do ERP', `Motivo retornado pelo banco: ${msg}`);
     });
   }
 
