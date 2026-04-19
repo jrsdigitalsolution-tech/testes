@@ -14,12 +14,12 @@
     tailwind.config = { corePlugins: { preflight: false } }
   </script>
 
-  <link rel="stylesheet" href="style.css?v=60">
+  <link rel="stylesheet" href="style.css?v=51">
 </head>
-<body class="antialiased">
+<body class="antialiased app-body">
 
 <div id="notificationArea" aria-live="polite" aria-atomic="true"></div>
-<div id="mainContent" role="main">
+<div id="mainContent">
   <nav class="navbar-custom">
     <div class="header-brand">
       <img src="https&#58;//res.cloudinary.com/dbnyxxhe3/image/upload/v1772102800/02_Prancheta_1_ksm9oj.png" class="logo-img" alt="Logo">
@@ -68,12 +68,12 @@
     
     <!-- ESQUERDA (PC): Botões Originais -->
     <div class="status-filters d-none d-md-flex" id="filterContainer">
-      <button type="button" class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
-      <button type="button" class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
-      <button type="button" class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
-      <button type="button" class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
-      <button type="button" class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
-      <button type="button" class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
+      <button class="filter-btn active" data-status="FIRMADAS" onclick="setFilter('FIRMADAS')">Firmadas</button>
+      <button class="filter-btn" data-status="TODAS" onclick="setFilter('TODAS')">Todas</button>
+      <button class="filter-btn" data-status="ENVIADAS" onclick="setFilter('ENVIADAS')">Enviadas</button>
+      <button class="filter-btn" data-status="FRUSTRADAS" onclick="setFilter('FRUSTRADAS')">Frustradas</button>
+      <button class="filter-btn" data-status="ENTREGUES" onclick="setFilter('ENTREGUES')">Entregues</button>
+      <button class="filter-btn" data-status="CONCLUIDAS" onclick="setFilter('CONCLUIDAS')">Concluídas</button>
     </div>
 
     <!-- MOBILE: Filtro de Status + Filtro de Ano -->
@@ -93,10 +93,7 @@
       <div class="status-select-wrapper shadow-sm" style="flex: 0 0 110px;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select" id="anoFilterMobile" onchange="mudarAno(this.value)" style="padding-left: 36px; padding-right: 14px;">
-          <option value="TODOS" selected>Todos</option>
-          <option value="26">2026</option>
-          <option value="25">2025</option>
-          <option value="24">2024</option>
+          <option value="26" selected>2026</option>
         </select>
       </div>
     </div>
@@ -106,10 +103,7 @@
       <div class="status-select-wrapper shadow-sm" style="min-width: 120px;">
         <i class="bi bi-calendar-event"></i>
         <select class="status-select py-1" id="anoFilterPC" onchange="mudarAno(this.value)" style="padding-left: 34px; padding-top: 8px; padding-bottom: 8px;">
-          <option value="TODOS" selected>Histórico</option>
-          <option value="26">2026</option>
-          <option value="25">2025</option>
-          <option value="24">2024</option>
+          <option value="26" selected>2026</option>
         </select>
       </div>
       <div class="table-scroll-label mb-0">Arraste para ver mais →</div>
@@ -147,8 +141,8 @@
       <div class="modal-header bg-light">
         <h6 class="fw-bold text-primary mb-0" id="modalObraTitle">CADASTRO DE OBRA</h6>
         <div class="ms-auto d-flex gap-2 align-items-center modal-header-actions">
-          <button type="button" id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline ms-1">Detalhe Financeiro</span></button>
-          <button type="button" id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline ms-1">Base Geral</span></button>
+          <button id="btnFin" class="modal-top-action modal-top-action-fin" onclick="abrirDetalheFinanceiro()"><i class="bi bi-wallet2"></i><span class="d-none d-md-inline ms-1">Detalhe Financeiro</span></button>
+          <button id="btnGeral" class="modal-top-action modal-top-action-geral" onclick="abrirResumoGeral()"><i class="bi bi-grid-1x2"></i><span class="d-none d-md-inline ms-1">Base Geral</span></button>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
       </div>
@@ -157,7 +151,7 @@
           <input type="hidden" id="data_entrada_orig">
           <input type="hidden" id="cpmv_obra_val">
           <div class="row g-3 mb-4">
-            <div class="col-md-2"><label class="form-label fw-bold small text-muted">OBRA Nº</label><input type="text" id="obra" inputmode="decimal" autocomplete="off" class="form-control form-control-sm shadow-none border-secondary-subtle" onchange="buscarInfoObra()"></div>
+            <div class="col-md-2"><label class="form-label fw-bold small text-muted">OBRA Nº</label><input type="text" id="obra" class="form-control form-control-sm shadow-none border-secondary-subtle" onchange="buscarInfoObra()"></div>
             <div class="col-md-4"><label class="form-label fw-bold small text-muted">CLIENTE</label><input type="text" id="cliente" class="form-control form-control-sm shadow-none border-secondary-subtle"></div>
             <div class="col-md-3"><label class="form-label fw-bold small text-muted">VALOR (R$)</label><input type="text" id="valor" class="form-control form-control-sm shadow-none border-secondary-subtle"></div>
             <div class="col-md-3"><label class="form-label fw-bold small text-muted">DIAS PRAZO</label><input type="number" id="dias_prazo" class="form-control form-control-sm shadow-none border-secondary-subtle"></div>
@@ -167,8 +161,8 @@
         </form>
       </div>
       <div class="modal-footer d-flex justify-content-between bg-light border-top-0">
-        <button type="button" class="btn btn-outline-danger btn-sm px-4 fw-bold shadow-sm" onclick="deletar()">EXCLUIR</button>
-        <button type="button" class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" id="btnSalvar" onclick="salvar()">GRAVAR DADOS</button>
+        <button class="btn btn-outline-danger btn-sm px-4 fw-bold shadow-sm" onclick="deletar()">EXCLUIR</button>
+        <button class="btn btn-primary btn-sm px-4 fw-bold shadow-sm" id="btnSalvar" onclick="salvar()">GRAVAR DADOS</button>
       </div>
     </div>
   </div>
@@ -278,7 +272,7 @@
           <label for="inputObraExtracao" class="form-label fw-semibold text-secondary mb-2">Número da obra</label>
           <div class="input-group input-group-lg">
             <span class="input-group-text"><i class="bi bi-search"></i></span>
-            <input type="text" class="form-control" id="inputObraExtracao" inputmode="decimal" autocomplete="off" placeholder="26.001">
+            <input type="text" class="form-control" id="inputObraExtracao" placeholder="26.001">
           </div>
           <div class="extract-choice-hint">Use o número exatamente como aparece na tabela.</div>
         </div>
@@ -292,8 +286,8 @@
 </div>
 
 <script src="https&#58;//cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="motorbackend.js?v=60"></script>
-<script src="script.js?v=60"></script>
+<script src="motorbackend.js?v=41"></script>
+<script src="script.js?v=41"></script>
 
 </body>
 </html>
