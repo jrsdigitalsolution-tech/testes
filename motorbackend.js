@@ -181,7 +181,19 @@ const motorBackend = {
       const anoEfetivo = String(anoFiltro || '26') === '26' ? '26' : '26';
 
       // 1. Conecta no servidor da empresa usando o Túnel Cloudflare (Seguro, HTTPS e Público)
-      const response = await fetch('https://agrees-providence-promoted-shortly.trycloudflare.com/api/carteira');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+      let response;
+      try {
+        response = await fetch('https://agrees-providence-promoted-shortly.trycloudflare.com/api/carteira', {
+          method: 'GET',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error('Erro ao conectar no servidor. Verifique se o túnel e o motor estão rodando.');
@@ -290,6 +302,10 @@ const motorBackend = {
       return resultado;
 
     } catch (e) {
+      if (e && e.name === 'AbortError') {
+        console.error("Erro na comunicação local:", e);
+        throw new Error('Tempo excedido ao conectar no servidor do ERP. Verifique o túnel Cloudflare e tente novamente.');
+      }
       console.error("Erro na comunicação local:", e);
       throw e;
     }
