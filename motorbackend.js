@@ -11,445 +11,177 @@ function getSafeId(str) {
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
 }
 
-function normalizeSpaces(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
-
-function normalizeCompareText(value) {
-  return normalizeSpaces(value)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function parseDateSafe(value) {
-  if (!value) return null;
-  if (value instanceof Date && !isNaN(value.getTime())) return new Date(value.getTime());
-
-  const txt = String(value).trim();
-  if (!txt) return null;
-
-  let m = txt.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
-  if (m) {
-    const ano = Number(m[3].length === 2 ? `20${m[3]}` : m[3]);
-    const dt = new Date(ano, Number(m[2]) - 1, Number(m[1]), 12, 0, 0, 0);
-    return isNaN(dt.getTime()) ? null : dt;
-  }
-
-  m = txt.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (m) {
-    const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
-    return isNaN(dt.getTime()) ? null : dt;
-  }
-
-  const dt = new Date(txt);
-  if (isNaN(dt.getTime())) return null;
-  dt.setHours(12, 0, 0, 0);
-  return dt;
-}
-
-function getYearFromDate(value) {
-  const dt = parseDateSafe(value);
-  if (!dt) return "";
-  return String(dt.getFullYear()).slice(-2);
-}
-
 function parseMoneyFlexible(value) {
-  if (value === null || value === undefined || value === "") return 0;
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
 
   let str = String(value).trim();
   if (!str) return 0;
 
-  str = str.replace(/\s/g, "").replace(/[R$r$\u00A0]/g, "");
+  str = str.replace(/\s/g, '').replace(/[R$r$\u00A0]/g, '');
 
-  if (str.includes(",")) {
-    str = str.replace(/\./g, "").replace(",", ".");
+  if (str.includes(',')) {
+    str = str.replace(/\./g, '').replace(',', '.');
   } else {
     const dotCount = (str.match(/\./g) || []).length;
-    if (dotCount > 1) str = str.replace(/\./g, "");
+    if (dotCount > 1) str = str.replace(/\./g, '');
   }
 
-  str = str.replace(/[^\d.-]/g, "");
+  str = str.replace(/[^\d.-]/g, '');
   const n = parseFloat(str);
   return Number.isFinite(n) ? n : 0;
 }
 
-function joinUniqueText(baseValue, newValue) {
-  const items = [];
+function parseDataUniversal(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : new Date(value.getTime());
+  if (typeof value !== 'string') return null;
 
-  function pushParts(value) {
-    normalizeSpaces(value)
-      .split(/\s*\/\s*/)
-      .map(v => normalizeSpaces(v))
-      .filter(Boolean)
-      .forEach(part => {
-        const key = normalizeCompareText(part);
-        if (!key) return;
-        if (!items.some(existing => normalizeCompareText(existing) === key)) {
-          items.push(part);
-        }
-      });
+  const txt = value.trim();
+  if (!txt || txt === "-" || txt === "N/A" || txt === "OK" || txt === "?") return null;
+
+  let m = txt.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+  if (m) {
+    const ano = Number(m[3].length === 2 ? `20${m[3]}` : m[3]);
+    return new Date(ano, Number(m[2]) - 1, Number(m[1]), 0, 0, 0);
   }
 
-  pushParts(baseValue);
-  pushParts(newValue);
-
-  return items.join(" / ");
-}
-
-function joinUniqueNF(baseValue, newValue) {
-  const items = [];
-
-  function pushParts(value) {
-    normalizeSpaces(value)
-      .split(/[\/,;|]+/)
-      .map(v => normalizeSpaces(v))
-      .filter(Boolean)
-      .forEach(part => {
-        const key = normalizeCompareText(part);
-        if (!key) return;
-        if (!items.some(existing => normalizeCompareText(existing) === key)) {
-          items.push(part);
-        }
-      });
+  m = txt.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0);
   }
 
-  pushParts(baseValue);
-  pushParts(newValue);
-
-  return items.join(" / ");
-}
-
-function pickFirstFilled(currentValue, nextValue) {
-  const current = normalizeSpaces(currentValue);
-  const next = normalizeSpaces(nextValue);
-  return current || next || "";
-}
-
-function pickLongerFilled(currentValue, nextValue) {
-  const current = normalizeSpaces(currentValue);
-  const next = normalizeSpaces(nextValue);
-  if (!current) return next;
-  if (!next) return current;
-  return next.length > current.length ? next : current;
-}
-
-function pickEarlierDate(currentValue, nextValue) {
-  const a = parseDateSafe(currentValue);
-  const b = parseDateSafe(nextValue);
-  if (!a && !b) return normalizeSpaces(currentValue) || normalizeSpaces(nextValue) || "";
-  if (!a) return normalizeSpaces(nextValue);
-  if (!b) return normalizeSpaces(currentValue);
-  return a.getTime() <= b.getTime() ? normalizeSpaces(currentValue) : normalizeSpaces(nextValue);
-}
-
-function pickLaterDate(currentValue, nextValue) {
-  const a = parseDateSafe(currentValue);
-  const b = parseDateSafe(nextValue);
-  if (!a && !b) return normalizeSpaces(currentValue) || normalizeSpaces(nextValue) || "";
-  if (!a) return normalizeSpaces(nextValue);
-  if (!b) return normalizeSpaces(currentValue);
-  return a.getTime() >= b.getTime() ? normalizeSpaces(currentValue) : normalizeSpaces(nextValue);
-}
-
-function extrairNumeroObraCanonico(valorObra) {
-  const raw = normalizeSpaces(valorObra);
-  if (!raw) {
-    return { numero: "", ano: "", sequencia: "", bruto: "" };
+  const d = new Date(txt);
+  if (!Number.isNaN(d.getTime())) {
+    d.setHours(12, 0, 0, 0);
+    return d;
   }
 
-  const padroes = [
-    /(?:^|[^0-9])(?:ob\s*ra\s*)?((20\d{2}|\d{2})\s*[.,\-\/]\s*(\d{1,5}))(?!\d)/i,
-    /(?:^|[^0-9])(?:ob\s*ra\s*)?((20\d{2}|\d{2})\s+(\d{1,5}))(?!\d)/i
-  ];
-
-  for (const regex of padroes) {
-    const match = raw.match(regex);
-    if (!match) continue;
-
-    let ano = String(match[2] || "").trim();
-    const sequenciaOriginal = String(match[3] || "").trim();
-
-    if (!ano || !sequenciaOriginal) continue;
-    if (ano.length === 4) ano = ano.slice(-2);
-
-    const seqNumero = parseInt(sequenciaOriginal, 10);
-    if (!Number.isFinite(seqNumero)) continue;
-
-    const seqNormalizada = String(seqNumero).padStart(Math.max(3, sequenciaOriginal.length), "0");
-    return {
-      numero: `${ano}.${seqNormalizada}`,
-      ano,
-      sequencia: seqNormalizada,
-      bruto: raw
-    };
-  }
-
-  return { numero: "", ano: "", sequencia: "", bruto: raw };
+  return null;
 }
 
-function inferirAnoLegado(erp) {
-  return (
-    getYearFromDate(erp.data_abertura) ||
-    getYearFromDate(erp.data_firmada) ||
-    getYearFromDate(erp.data_enviada) ||
-    getYearFromDate(erp.data_frustrada) ||
-    getYearFromDate(erp.data_faturam || erp.data_faturamento) ||
-    ""
-  );
+function pickFirstFilled(atual, novo) {
+  const atualVal = atual === 0 ? 0 : String(atual || '').trim();
+  const novoVal = novo === 0 ? 0 : String(novo || '').trim();
+  return atualVal !== '' ? atual : (novoVal !== '' ? novo : atual);
 }
 
-function resolverIdentidadeObra(erp) {
-  const obraBruta = normalizeSpaces(erp.obra);
-  const extraida = extrairNumeroObraCanonico(obraBruta);
-  const clienteNorm = normalizeCompareText(erp.cliente || "").slice(0, 120);
-  const obraFallback = normalizeCompareText(obraBruta).slice(0, 180);
-  const anoBase = extraida.ano || inferirAnoLegado(erp) || "";
+function pickEarlierDate(atual, novo) {
+  const atualDt = parseDataUniversal(atual);
+  const novoDt = parseDataUniversal(novo);
 
-  let chave = "";
-  let exibicao = "";
+  if (!atualDt && novoDt) return novo;
+  if (atualDt && !novoDt) return atual;
+  if (!atualDt && !novoDt) return pickFirstFilled(atual, novo);
 
-  if (extraida.numero) {
-    chave = `obra:${extraida.numero}`;
-    exibicao = extraida.numero;
-  } else {
-    chave = `legado:${anoBase || "sem-ano"}:${clienteNorm}:${obraFallback}`;
-    exibicao = obraBruta || `OBRA ${anoBase || "S/ANO"}`;
+  return novoDt < atualDt ? novo : atual;
+}
+
+function pickLaterDate(atual, novo) {
+  const atualDt = parseDataUniversal(atual);
+  const novoDt = parseDataUniversal(novo);
+
+  if (!atualDt && novoDt) return novo;
+  if (atualDt && !novoDt) return atual;
+  if (!atualDt && !novoDt) return pickFirstFilled(atual, novo);
+
+  return novoDt > atualDt ? novo : atual;
+}
+
+function explodeJoinedText(value) {
+  const txt = String(value || '').trim();
+  if (!txt) return [];
+  return txt.split(' / ').map(part => String(part || '').trim()).filter(Boolean);
+}
+
+function joinUniqueText(...values) {
+  const vistos = new Set();
+  const saida = [];
+
+  values.forEach(value => {
+    const partes = Array.isArray(value) ? value : explodeJoinedText(value);
+    partes.forEach(parte => {
+      const texto = String(parte || '').trim();
+      if (!texto) return;
+
+      const chave = texto.toLocaleLowerCase('pt-BR');
+      if (vistos.has(chave)) return;
+
+      vistos.add(chave);
+      saida.push(texto);
+    });
+  });
+
+  return saida.join(' / ');
+}
+
+function pushUniqueText(lista, value) {
+  const texto = String(value || '').trim();
+  if (!texto) return;
+  if (!lista.some(item => item.toLocaleLowerCase('pt-BR') === texto.toLocaleLowerCase('pt-BR'))) {
+    lista.push(texto);
   }
+}
 
-  return {
-    obraExibicao: exibicao,
-    obraChave: chave,
-    obraBruta,
-    obraCanonica: extraida.numero,
-    anoObra: extraida.ano || anoBase || ""
-  };
+function montarObservacoesConsolidadas(meta) {
+  const partes = [];
+
+  if (meta.itens) partes.push(`Itens ERP: ${meta.itens}`);
+  if (meta.nfs) partes.push(`NF(s): ${meta.nfs}`);
+  if (meta.observacoesExtras.length) partes.push(`Obs. ERP: ${meta.observacoesExtras.join(' | ')}`);
+
+  return partes.join(' | ');
+}
+
+function extrairObra2026(erp) {
+  const numObra = String(erp?.obra || '').trim();
+  if (!numObra) return '';
+  const match = numObra.match(/26[.,-]?\d{3,}/);
+  return match ? match[0] : '';
 }
 
 function calcularStatusProposta(erp) {
-  const etapaUp = String(erp.etapa || "").toUpperCase();
-  const temNF = !!normalizeSpaces(erp.nf || "");
-  const temFaturamento = !!(erp.data_faturam || erp.data_faturamento);
+  let statusProposta = "ENVIADAS";
+  const etapaUp = String(erp?.etapa || '').toUpperCase();
 
-  if (temNF || temFaturamento || etapaUp.includes("CONCLU")) {
-    return "CONCLUIDAS";
+  if (erp?.data_frustrada) {
+    statusProposta = "FRUSTRADAS";
+  } else if (etapaUp.includes('CONCLU') || erp?.data_faturam || erp?.data_faturamento) {
+    statusProposta = "CONCLUIDAS";
+  } else if (etapaUp.includes('ENTREGUE')) {
+    statusProposta = "ENTREGUES";
+  } else if (erp?.data_firmada) {
+    statusProposta = "FIRMADAS";
   }
-  if (etapaUp.includes("ENTREGUE")) {
-    return "ENTREGUES";
-  }
-  if (erp.data_firmada) {
-    return "FIRMADAS";
-  }
-  if (erp.data_frustrada) {
-    return "FRUSTRADAS";
-  }
-  return "ENVIADAS";
+
+  return statusProposta;
 }
 
-function isStatusConfirmado(status) {
-  const s = String(status || "").trim();
-  return s === "CONCLUIDAS" || s === "ENTREGUES" || s === "FIRMADAS";
-}
-
-function resolverAnoCompetencia(erp, identidade, statusProposta) {
-  const dataFaturamento = erp.data_faturam || erp.data_faturamento || "";
-  const temNF = !!normalizeSpaces(erp.nf || "");
-
-  if (temNF || dataFaturamento || statusProposta === "CONCLUIDAS" || statusProposta === "ENTREGUES") {
-    return (
-      getYearFromDate(dataFaturamento) ||
-      getYearFromDate(erp.data_firmada) ||
-      getYearFromDate(erp.data_abertura) ||
-      identidade.anoObra ||
-      ""
-    );
-  }
-
-  if (statusProposta === "FIRMADAS") {
-    return (
-      getYearFromDate(erp.data_firmada) ||
-      getYearFromDate(erp.data_abertura) ||
-      identidade.anoObra ||
-      ""
-    );
-  }
-
-  if (statusProposta === "FRUSTRADAS") {
-    return (
-      getYearFromDate(erp.data_frustrada) ||
-      getYearFromDate(erp.data_abertura) ||
-      identidade.anoObra ||
-      ""
-    );
-  }
-
-  return (
-    getYearFromDate(erp.data_enviada) ||
-    getYearFromDate(erp.data_abertura) ||
-    identidade.anoObra ||
-    ""
-  );
-}
-
-function construirRegistroERP(erp) {
-  const identidade = resolverIdentidadeObra(erp);
-  const statusProposta = calcularStatusProposta(erp);
-  const anoCompetencia = resolverAnoCompetencia(erp, identidade, statusProposta);
-
-  return {
-    erp,
-    identidade,
-    statusProposta,
-    anoCompetencia,
-    valorERP: erp.p_total !== null ? parseMoneyFlexible(erp.p_total) : 0
-  };
-}
-
-function escolherStatusConsolidado(registros) {
-  if (registros.some(r => r.statusProposta === "CONCLUIDAS")) return "CONCLUIDAS";
-  if (registros.some(r => r.statusProposta === "ENTREGUES")) return "ENTREGUES";
-  if (registros.some(r => r.statusProposta === "FIRMADAS")) return "FIRMADAS";
-  if (registros.some(r => r.statusProposta === "FRUSTRADAS")) return "FRUSTRADAS";
-  return "ENVIADAS";
-}
-
-function selecionarRegistrosValidos(registros) {
-  if (!Array.isArray(registros) || registros.length === 0) return [];
-
-  const confirmados = registros.filter(reg => isStatusConfirmado(reg.statusProposta));
-  if (confirmados.length > 0) {
-    return confirmados;
-  }
-
-  return registros;
-}
-
-function getStatusPreferencia(status) {
+function getStatusWeight(status) {
   const mapa = {
-    CONCLUIDAS: 5,
-    ENTREGUES: 4,
-    FIRMADAS: 3,
-    FRUSTRADAS: 2,
-    ENVIADAS: 1
+    ENVIADAS: 1,
+    FIRMADAS: 2,
+    ENTREGUES: 3,
+    CONCLUIDAS: 4,
+    FRUSTRADAS: 5
   };
   return mapa[String(status || "").trim()] || 0;
 }
 
-function escolherRegistroPrincipal(registros) {
-  if (!Array.isArray(registros) || registros.length === 0) return null;
-
-  return registros.slice().sort((a, b) => {
-    const pesoA = getStatusPreferencia(a.statusProposta);
-    const pesoB = getStatusPreferencia(b.statusProposta);
-    if (pesoA !== pesoB) return pesoB - pesoA;
-
-    const dataA = parseDateSafe(a.erp.data_faturam || a.erp.data_faturamento || a.erp.data_firmada || a.erp.data_abertura || a.erp.data_enviada || a.erp.data_frustrada || "");
-    const dataB = parseDateSafe(b.erp.data_faturam || b.erp.data_faturamento || b.erp.data_firmada || b.erp.data_abertura || b.erp.data_enviada || b.erp.data_frustrada || "");
-    const tsA = dataA ? dataA.getTime() : -1;
-    const tsB = dataB ? dataB.getTime() : -1;
-    if (tsA !== tsB) return tsB - tsA;
-
-    return String(a.identidade.obraExibicao || "").localeCompare(String(b.identidade.obraExibicao || ""), "pt-BR", { numeric: true });
-  })[0];
-}
-
-function consolidarRegistros(registros) {
-  const selecionados = selecionarRegistrosValidos(registros);
-  if (!selecionados.length) return null;
-
-  const principal = escolherRegistroPrincipal(selecionados);
-  if (!principal) return null;
-
-  const statusConsolidado = escolherStatusConsolidado(selecionados);
-  const primeiraLinha = principal.erp;
-
-  const linha = [
-    primeiraLinha.data_firmada || "", // 0: DATA FIRMADA
-    principal.identidade.obraExibicao, // 1: OBRA EXIBIDA / CANÔNICA
-    primeiraLinha.cliente || "", // 2: CLIENTE
-    0, // 3: VALOR
-    primeiraLinha.praz || primeiraLinha.pz || "", // 4: DIAS PRAZO
-
-    // 5 a 16: Itens de controle em branco
-    "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
-
-    normalizeSpaces(primeiraLinha.observacoes || primeiraLinha.obs || ""), // 17: OBSERVAÇÕES
-    "{}", // 18: DETALHES JSON
-    primeiraLinha.cpmv || 0, // 19: CPMV
-    normalizeSpaces(primeiraLinha.item || ""), // 20: ITEM
-    normalizeSpaces(primeiraLinha.categoria || ""), // 21: CATEGORIA
-
-    // 22 a 32: INFORMAÇÕES EXTRAS
-    statusConsolidado, // 22: STATUS GERAL DA PROPOSTA
-    primeiraLinha.data_abertura || "", // 23: ABERTURA
-    primeiraLinha.segmento || "", // 24: SEGMENTO
-    primeiraLinha.vendedor || primeiraLinha.responsavel || "", // 25: RESPONSAVEL
-    primeiraLinha.complexidade || "", // 26: COMPLEXIDADE
-    primeiraLinha.uf || "", // 27: UF
-    primeiraLinha.etapa || "", // 28: ETAPA
-    normalizeSpaces(primeiraLinha.nf || ""), // 29: NF
-    primeiraLinha.data_frustrada || "", // 30: FRUSTRADA
-    primeiraLinha.data_enviada || "", // 31: ENVIADA
-    primeiraLinha.data_faturam || primeiraLinha.data_faturamento || "" // 32: FATURAMENTO
-  ];
-
-  selecionados.forEach(registro => {
-    const erp = registro.erp;
-
-    linha[3] = parseMoneyFlexible(linha[3]) + registro.valorERP;
-    linha[20] = joinUniqueText(linha[20], erp.item || "");
-    linha[21] = joinUniqueText(linha[21], erp.categoria || "");
-    linha[29] = joinUniqueNF(linha[29], erp.nf || "");
-
-    linha[0] = pickEarlierDate(linha[0], erp.data_firmada || "");
-    linha[4] = pickFirstFilled(linha[4], erp.praz || erp.pz || "");
-    linha[17] = pickLongerFilled(linha[17], erp.observacoes || erp.obs || "");
-    linha[19] = pickFirstFilled(linha[19], erp.cpmv || 0);
-
-    linha[2] = pickFirstFilled(linha[2], erp.cliente || "");
-    linha[23] = pickEarlierDate(linha[23], erp.data_abertura || "");
-    linha[24] = pickFirstFilled(linha[24], erp.segmento || "");
-    linha[25] = pickFirstFilled(linha[25], erp.vendedor || erp.responsavel || "");
-    linha[26] = pickFirstFilled(linha[26], erp.complexidade || "");
-    linha[27] = pickFirstFilled(linha[27], erp.uf || "");
-    linha[28] = pickLongerFilled(linha[28], erp.etapa || "");
-    linha[30] = pickEarlierDate(linha[30], erp.data_frustrada || "");
-    linha[31] = pickEarlierDate(linha[31], erp.data_enviada || "");
-    linha[32] = pickLaterDate(linha[32], erp.data_faturam || erp.data_faturamento || "");
-  });
-
-  linha[22] = escolherStatusConsolidado(selecionados);
-  return linha;
-}
-
-function compararObrasParaLista(valorA, valorB) {
-  const a = extrairNumeroObraCanonico(valorA);
-  const b = extrairNumeroObraCanonico(valorB);
-
-  if (a.numero && b.numero) {
-    const anoA = parseInt(a.ano || "0", 10);
-    const anoB = parseInt(b.ano || "0", 10);
-    if (anoA !== anoB) return anoA - anoB;
-
-    const seqA = parseInt(a.sequencia || "0", 10);
-    const seqB = parseInt(b.sequencia || "0", 10);
-    if (seqA !== seqB) return seqA - seqB;
-  } else if (a.numero && !b.numero) {
-    return -1;
-  } else if (!a.numero && b.numero) {
-    return 1;
-  }
-
-  return String(valorA || "").localeCompare(String(valorB || ""), "pt-BR", { numeric: true });
+function atualizarStatusMaisForte(atual, novo) {
+  return getStatusWeight(novo) >= getStatusWeight(atual) ? novo : atual;
 }
 
 const motorBackend = {
 
-  sincronizarEFetch: async function(anoFiltro = 'TODOS') {
+  sincronizarEFetch: async function(anoFiltro = '26') {
     try {
+      // Compatibilidade preservada com o frontend.
+      // Nesta etapa da evolução, a leitura permanece isolada exclusivamente para 2026.
+      const anoEfetivo = String(anoFiltro || '26') === '26' ? '26' : '26';
+
       // 1. Conecta no servidor da empresa usando o Túnel Cloudflare (Seguro, HTTPS e Público)
-      const response = await fetch('https://thumbzilla-modern-refrigerator-simon.trycloudflare.com/api/carteira');
+      const response = await fetch('https://agrees-providence-promoted-shortly.trycloudflare.com/api/carteira');
 
       if (!response.ok) {
         throw new Error('Erro ao conectar no servidor. Verifique se o túnel e o motor estão rodando.');
@@ -462,29 +194,96 @@ const motorBackend = {
         ["DATA", "OBRA", "CLIENTE", "VALOR", "DIAS PRAZO", ...ITENS_ORDEM, "OBSERVAÇÕES", "DETALHES_JSON", "CPMV", "ITEM", "CATEGORIA"]
       ];
 
-      // 3. Agrupa registros normalizados por obra
-      const gruposPorObra = {};
+      // Dicionário (memória) para evitar duplicação visual de obras
+      const obrasProcessadas = {};
 
+      // 3. Varre os dados do JSON e traduz para a matriz do painel
       if (Array.isArray(erpData) && erpData.length > 0) {
         erpData.forEach(erp => {
-          const registro = construirRegistroERP(erp);
-          if (!registro.identidade.obraExibicao) return;
+          const obra2026 = extrairObra2026(erp);
+          if (!obra2026 || !obra2026.startsWith(anoEfetivo)) return;
 
-          if (anoFiltro !== 'TODOS' && registro.anoCompetencia !== String(anoFiltro)) {
-            return;
+          const valorERP = erp.p_total !== null ? parseMoneyFlexible(erp.p_total) : 0;
+          const statusProposta = calcularStatusProposta(erp);
+          const itemAtual = String(erp.item || '').trim();
+          const categoriaAtual = String(erp.categoria || '').trim();
+          const nfAtual = String(erp.nf || '').trim();
+          const observacaoAtual = String(erp.observacoes || erp.obs || '').trim();
+
+          if (!obrasProcessadas[obra2026]) {
+            const linhaInicial = [
+              erp.data_firmada || "", // 0: DATA FIRMADA
+              obra2026, // 1: OBRA LIMPA
+              erp.cliente || "", // 2: CLIENTE
+              valorERP || 0, // 3: VALOR
+              erp.praz || erp.pz || "", // 4: DIAS_PRAZO
+
+              // 5 a 16: Itens de controle em branco
+              "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
+
+              "", // 17: OBSERVAÇÕES
+              "{}", // 18: DETALHES JSON
+              erp.cpmv || 0, // 19: CPMV
+              itemAtual || "", // 20: ITEM
+              categoriaAtual || "", // 21: CATEGORIA
+
+              // 22 a 32: INFORMAÇÕES EXTRAS
+              statusProposta, // 22: STATUS GERAL DA PROPOSTA
+              erp.data_abertura || "", // 23: ABERTURA
+              erp.segmento || "", // 24: SEGMENTO
+              erp.vendedor || erp.responsavel || "", // 25: RESPONSAVEL
+              erp.complexidade || "", // 26: COMPLEXIDADE
+              erp.uf || "", // 27: UF
+              erp.etapa || "", // 28: ETAPA
+              nfAtual || "", // 29: NF
+              erp.data_frustrada || "", // 30: FRUSTRADA
+              erp.data_enviada || "", // 31: ENVIADA
+              erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
+            ];
+
+            obrasProcessadas[obra2026] = {
+              linha: linhaInicial,
+              observacoesExtras: []
+            };
+          } else {
+            const linhaExistente = obrasProcessadas[obra2026].linha;
+
+            linhaExistente[3] = parseMoneyFlexible(linhaExistente[3]) + valorERP;
+            linhaExistente[0] = pickEarlierDate(linhaExistente[0], erp.data_firmada || "");
+            linhaExistente[2] = pickFirstFilled(linhaExistente[2], erp.cliente || "");
+            linhaExistente[4] = pickFirstFilled(linhaExistente[4], erp.praz || erp.pz || "");
+            linhaExistente[19] = pickFirstFilled(linhaExistente[19], erp.cpmv || 0);
+            linhaExistente[22] = atualizarStatusMaisForte(linhaExistente[22], statusProposta);
+            linhaExistente[23] = pickEarlierDate(linhaExistente[23], erp.data_abertura || "");
+            linhaExistente[24] = pickFirstFilled(linhaExistente[24], erp.segmento || "");
+            linhaExistente[25] = pickFirstFilled(linhaExistente[25], erp.vendedor || erp.responsavel || "");
+            linhaExistente[26] = pickFirstFilled(linhaExistente[26], erp.complexidade || "");
+            linhaExistente[27] = pickFirstFilled(linhaExistente[27], erp.uf || "");
+            linhaExistente[28] = pickFirstFilled(linhaExistente[28], erp.etapa || "");
+            linhaExistente[30] = pickLaterDate(linhaExistente[30], erp.data_frustrada || "");
+            linhaExistente[31] = pickEarlierDate(linhaExistente[31], erp.data_enviada || "");
+            linhaExistente[32] = pickLaterDate(linhaExistente[32], erp.data_faturam || erp.data_faturamento || "");
           }
 
-          const chaveObra = registro.identidade.obraChave;
-          if (!gruposPorObra[chaveObra]) gruposPorObra[chaveObra] = [];
-          gruposPorObra[chaveObra].push(registro);
+          const agregada = obrasProcessadas[obra2026];
+          agregada.linha[20] = joinUniqueText(agregada.linha[20], itemAtual ? [itemAtual] : []);
+          agregada.linha[21] = joinUniqueText(agregada.linha[21], categoriaAtual ? [categoriaAtual] : []);
+          agregada.linha[29] = joinUniqueText(agregada.linha[29], nfAtual ? [nfAtual] : []);
+
+          if (observacaoAtual) {
+            pushUniqueText(agregada.observacoesExtras, observacaoAtual);
+          }
+
+          agregada.linha[17] = montarObservacoesConsolidadas({
+            itens: agregada.linha[20],
+            nfs: agregada.linha[29],
+            observacoesExtras: agregada.observacoesExtras
+          });
         });
 
-        const listaObras = Object.values(gruposPorObra)
-          .map(grupo => consolidarRegistros(grupo))
-          .filter(Boolean);
-
-        listaObras.sort((a, b) => compararObrasParaLista(a[1], b[1]));
-
+        // Ordenação crescente e definitiva
+        const listaObras = Object.values(obrasProcessadas).map(item => item.linha);
+        listaObras.sort((a, b) => a[1].localeCompare(b[1], 'pt-BR', { numeric: true }));
         listaObras.forEach(linha => resultado.push(linha));
       }
 
