@@ -98,6 +98,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           </div>
         `;
         document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
+        const mobileContainer = document.getElementById('mobileCardsContainer');
+        if (mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-danger px-3">${diagHtml}</div>`;
         finalizeError(`motorbackend.js ausente.`);
         return;
       }
@@ -813,6 +815,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function carregar() {
     document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Sincronizando carteira 2026 com o ERP...</span></td></tr>`;
+    const mobileContainer = document.getElementById('mobileCardsContainer');
+    if (mobileContainer) {
+      mobileContainer.innerHTML = `<div class=\"text-center py-5 text-muted\"><div class=\"spinner-border text-primary spinner-border-sm me-2\" role=\"status\"></div><span class=\"fw-bold\">Sincronizando carteira 2026 com o ERP...</span></div>`;
+    }
     
     // CHAMADA ORIGINAL COM O FILTRO DE ANO ADICIONADO
     callServer('sincronizarEFetch', [currentAnoFilter], data => {
@@ -824,7 +830,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       renderizar(dadosLocais.slice(1));
     }, msg => {
       if (msg === "motorbackend.js ausente.") return;
-      document.getElementById('tabBody').innerHTML = `
+
+      const erroHtmlDesktop = `
         <tr><td colspan="20" class="text-center py-5 text-danger">
           <i class="bi bi-database-x me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
           <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
@@ -834,6 +841,21 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           </span><br>
         </td></tr>
       `;
+      document.getElementById('tabBody').innerHTML = erroHtmlDesktop;
+
+      const mobileContainer = document.getElementById('mobileCardsContainer');
+      if (mobileContainer) {
+        mobileContainer.innerHTML = `
+          <div class="text-center py-5 text-danger px-3">
+            <i class="bi bi-database-x d-block mb-3" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
+            <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
+              Motivo Retornado pelo Banco:<br>
+              <strong class="text-danger">${escapeHtml(msg)}</strong>
+            </span>
+          </div>
+        `;
+      }
     });
   }
 
