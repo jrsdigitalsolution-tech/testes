@@ -5,126 +5,22 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     STATUS_PROPOSTA: 22, DATA_ABERTURA: 23, SEGMENTO: 24, RESPONSAVEL: 25, COMPLEXIDADE: 26, UF: 27, ETAPA: 28, NF: 29, DATA_FRUSTRADA: 30, DATA_ENVIADA: 31, DATA_FATURAMENTO: 32
   });
   
-  let currentStatusFilter = 'FIRMADAS';
-  const MOBILE_BREAKPOINT = 768;
-  let rafViewportSync = 0;
-  let rafModalSync = 0;
+  let currentStatusFilter = 'FIRMADAS'; // Original Intacto
+  let currentAnoFilter = '26'; 
 
-  function isMobileDeviceView() {
-    return window.innerWidth <= MOBILE_BREAKPOINT || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-  }
+  function mudarAno(ano) {
+    const anoEfetivo = '26';
+    const houveTentativaDeTroca = Boolean(ano) && String(ano) !== anoEfetivo;
 
-  function getViewportHeightSafe() {
-    if (window.visualViewport && Number.isFinite(window.visualViewport.height)) return window.visualViewport.height;
-    return window.innerHeight || document.documentElement.clientHeight || 0;
-  }
+    currentAnoFilter = anoEfetivo;
+    sincronizarAnoFixoNaInterface();
 
-  function syncViewportMetrics() {
-    const root = document.documentElement;
-    const viewportHeight = getViewportHeightSafe();
-    const vh = viewportHeight * 0.01;
-    root.style.setProperty('--app-vh', `${vh}px`);
-    root.style.setProperty('--viewport-height', `${viewportHeight}px`);
-    root.classList.toggle('mobile-runtime', isMobileDeviceView());
-    root.classList.toggle('desktop-runtime', !isMobileDeviceView());
-  }
-
-  function syncBodyModalState() {
-    const modaisAbertos = Array.from(document.querySelectorAll('.modal.show'));
-    document.body.classList.toggle('modal-stack-active', modaisAbertos.length > 0);
-    document.body.classList.toggle('child-modal-open', modaisAbertos.length > 1);
-
-    if (!modaisAbertos.length) {
-      document.body.classList.remove('modal-open');
-      document.body.style.removeProperty('paddingRight');
-      return;
+    if (houveTentativaDeTroca) {
+      notify("<i class='bi bi-calendar-event me-2'></i> Nesta etapa, a carteira está isolada exclusivamente para 2026.");
     }
 
-    document.body.classList.add('modal-open');
+    carregar();
   }
-
-  function ajustarModalElemento(modalEl) {
-    if (!modalEl) return;
-
-    const dialog = modalEl.querySelector('.modal-dialog');
-    const content = modalEl.querySelector('.modal-content');
-    const body = modalEl.querySelector('.modal-body');
-    if (!dialog || !content) return;
-
-    if (!isMobileDeviceView()) {
-      dialog.style.removeProperty('margin');
-      content.style.removeProperty('maxHeight');
-      content.style.removeProperty('overflow');
-      if (body) {
-        body.style.removeProperty('maxHeight');
-        body.style.removeProperty('overflowY');
-        body.style.removeProperty('-webkit-overflow-scrolling');
-      }
-      return;
-    }
-
-    const viewportHeight = getViewportHeightSafe();
-    const margemVertical = 12;
-    const safeTop = 12;
-    const safeBottom = 20;
-    const alturaDisponivel = Math.max(320, viewportHeight - safeTop - safeBottom - (margemVertical * 2));
-
-    dialog.style.margin = `${margemVertical}px auto`;
-    content.style.maxHeight = `${alturaDisponivel}px`;
-    content.style.overflow = 'hidden';
-
-    if (body) {
-      const header = modalEl.querySelector('.modal-header');
-      const footer = modalEl.querySelector('.modal-footer');
-      const headerHeight = header ? header.offsetHeight : 0;
-      const footerHeight = footer ? footer.offsetHeight : 0;
-      const bodyMax = Math.max(160, alturaDisponivel - headerHeight - footerHeight);
-      body.style.maxHeight = `${bodyMax}px`;
-      body.style.overflowY = 'auto';
-      body.style.setProperty('-webkit-overflow-scrolling', 'touch');
-    }
-  }
-
-  function ajustarModaisAbertosParaMobile() {
-    if (rafModalSync) cancelAnimationFrame(rafModalSync);
-    rafModalSync = requestAnimationFrame(() => {
-      rafModalSync = 0;
-      document.querySelectorAll('.modal').forEach(ajustarModalElemento);
-      syncBodyModalState();
-    });
-  }
-
-  function requestViewportMetricsSync() {
-    if (rafViewportSync) cancelAnimationFrame(rafViewportSync);
-    rafViewportSync = requestAnimationFrame(() => {
-      rafViewportSync = 0;
-      syncViewportMetrics();
-      ajustarModaisAbertosParaMobile();
-      ajustarRolagemDaTabela();
-    });
-  }
-
-  function centralizarCampoAtivoNoModal(target) {
-    if (!target || !isMobileDeviceView()) return;
-
-    const modalBody = target.closest('.modal-body');
-    if (!modalBody) return;
-
-    setTimeout(() => {
-      try {
-        target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
-      } catch (_) {
-        try { target.scrollIntoView(true); } catch (_) {}
-      }
-
-      const bodyRect = modalBody.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const offsetTop = targetRect.top - bodyRect.top + modalBody.scrollTop;
-      modalBody.scrollTop = Math.max(0, offsetTop - 24);
-      ajustarModaisAbertosParaMobile();
-    }, 180);
-  }
-
 
   function setFilter(status) {
     currentStatusFilter = status;
@@ -134,6 +30,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         btn.classList.add('active');
       }
     });
+    const selectEl = document.getElementById('statusFilter');
+    if (selectEl && selectEl.value !== status) {
+      selectEl.value = status;
+    }
     renderizar(dadosLocais.slice(1));
   }
 
@@ -195,16 +95,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
             <i class="bi bi-file-earmark-x text-danger d-block mb-3" style="font-size: 3.5rem;"></i>
             <h4 class="text-danger fw-bold">ARQUIVO DO MOTOR NÃO ENCONTRADO</h4>
             <p class="text-muted mt-2">O navegador tentou ligar o motor do Supabase, mas o arquivo não foi carregado.</p>
-            <div class="text-start d-inline-block bg-light p-3 rounded border mt-3 shadow-sm">
-              <strong>O que você deve fazer agora:</strong><br><br>
-              1. Vá na sua pasta do Windows.<br>
-              2. Tem um arquivo lá chamado <strong>motorbackand</strong> (com a letra A).<br>
-              3. Renomeie ele para <strong>motorbackend.js</strong> (com a letra E).<br>
-              4. Depois de renomear, volte aqui e aperte F5.
-            </div>
           </div>
         `;
         document.getElementById('tabBody').innerHTML = `<tr><td colspan="20">${diagHtml}</td></tr>`;
+        const mobileContainer = document.getElementById('mobileCardsContainer');
+        if (mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-danger px-3">${diagHtml}</div>`;
         finalizeError(`motorbackend.js ausente.`);
         return;
       }
@@ -290,17 +185,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return `${dia}/${mes}/${ano}`;
   }
 
-  function sanitizeMoneyText(value) { return String(value || "").trim(); }
-
   function sanitizeInteger(value) {
     const num = parseInt(String(value || "").trim(), 10);
     return Number.isFinite(num) && num >= 0 ? String(num) : "";
   }
 
-  // ==== NOVO MOTOR DE CONVERSÃO FINANCEIRA (100% BLINDADO) ====
   function parseMoneyFlexible(value) {
     if (value === null || value === undefined || value === '') return 0;
-    // Se o valor já for número limpo do banco (ex: 2292.152), usa direto!
     if (typeof value === 'number') return value;
 
     let str = String(value).trim();
@@ -308,16 +199,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
     str = str.replace(/\s/g, '').replace(/[R$r$\u00A0]/g, '');
 
-    // Se o usuário digitou com vírgula, garante que é o formato Brasileiro
     if (str.includes(',')) {
       str = str.replace(/\./g, '').replace(',', '.');
     } else {
-      // Se não tem vírgula, e tem mais de um ponto (ex: 2.000.000), os pontos são milhares
       const dotCount = (str.match(/\./g) || []).length;
       if (dotCount > 1) {
         str = str.replace(/\./g, '');
       }
-      // Se tiver apenas 1 ponto (ex: "2292.15200"), mantém o ponto, pois é o formato padrão do DB.
     }
 
     str = str.replace(/[^\d.-]/g, '');
@@ -327,7 +215,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
   function formatMoneyBR(value) {
     const num = parseMoneyFlexible(value);
-    // Garantia de não exibir centavos e formatar com os pontos visualmente corretos
     return num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
 
@@ -422,47 +309,22 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     modalPendenciaUI = new bootstrap.Modal(document.getElementById('modalPendenciaItem'));
     modalObraEl = document.getElementById('modalObra');
 
-    const nestedModalIds = ['modalCompraItem', 'modalResumoGeral', 'modalPendenciaItem', 'modalExtracaoRelatorio'];
+    const nestedModalIds = ['modalCompraItem', 'modalResumoGeral', 'modalPendenciaItem'];
     nestedModalIds.forEach(modalId => {
       const modalEl = document.getElementById(modalId);
       if (!modalEl) return;
-
       modalEl.addEventListener('show.bs.modal', function () {
         if (modalObraEl && modalObraEl.classList.contains('show')) document.body.classList.add('child-modal-open');
-        ajustarModalElemento(modalEl);
-        requestViewportMetricsSync();
       });
-
-      modalEl.addEventListener('shown.bs.modal', function () {
-        ajustarModalElemento(modalEl);
-        syncBodyModalState();
-        requestViewportMetricsSync();
-      });
-
       modalEl.addEventListener('hidden.bs.modal', function () {
         const aindaTemModalFilhoAberto = nestedModalIds.some(id => { const el = document.getElementById(id); return el && el.classList.contains('show'); });
         if (!aindaTemModalFilhoAberto) document.body.classList.remove('child-modal-open');
         if (modalObraEl && modalObraEl.classList.contains('show')) document.body.classList.add('modal-open');
-        syncBodyModalState();
-        requestViewportMetricsSync();
       });
     });
 
     if (modalObraEl) {
-      modalObraEl.addEventListener('show.bs.modal', function () {
-        ajustarModalElemento(modalObraEl);
-        requestViewportMetricsSync();
-      });
-      modalObraEl.addEventListener('shown.bs.modal', function () {
-        ajustarModalElemento(modalObraEl);
-        syncBodyModalState();
-        requestViewportMetricsSync();
-      });
-      modalObraEl.addEventListener('hidden.bs.modal', function () {
-        document.body.classList.remove('child-modal-open');
-        syncBodyModalState();
-        requestViewportMetricsSync();
-      });
+      modalObraEl.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('child-modal-open'); });
     }
   }
 
@@ -681,6 +543,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function renderizar(dadosOriginais) {
     const head = document.getElementById('tabHead');
     const body = document.getElementById('tabBody');
+    const mobileContainer = document.getElementById('mobileCardsContainer');
 
     const dados = dadosOriginais.filter(d => {
       if (currentStatusFilter === 'TODAS') return true;
@@ -691,12 +554,14 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const isGeralView = currentStatusFilter !== 'FIRMADAS';
     
     let html = "";
+    let htmlMobile = "";
     let totVal = 0;
     let maiorAtraso = { texto: "-", valor: 0 };
     
     const totalOrcadoGeral = dadosOrdenados.reduce((acc, d) => acc + parseMoneyFlexible(d.content[COLS.VALOR]), 0);
 
     if (!isGeralView) {
+      // CABEÇALHO DESKTOP - FIRMADAS
       const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
       head.innerHTML = "<tr>" + labs.map(l => {
         const chave = mapaOrdenacaoCabecalho[l];
@@ -719,14 +584,17 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
+        // LINHA DESKTOP - FIRMADAS
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || ""}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.CATEGORIA_GERAL]}">${r[COLS.CATEGORIA_GERAL] || "-"}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.CATEGORIA_GERAL])}">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div></td>`;
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
         html += `<td><span class="days-badge ${resCompras.valor >= 100 ? "days-ok" : "days-urgent"} shadow-sm">${resCompras.texto}</span></td>`;
+
+        let miniBadgesMobile = "";
 
         for (let j = COLS.ITEM_INICIO; j <= COLS.ITEM_FIM; j++) {
           const c = String(r[j] || "").trim();
@@ -750,14 +618,54 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           const conteudoCelula = isStatusDate(c) ? formatDateDisplayBR(c) : c;
           const tituloDetalhe = c === "?" ? (det.alerta_descricao || "Pendência registrada") : (det.descricao || "");
           html += `<td><span class="${cl}" title="${escapeHtml(tituloDetalhe)}">${conteudoCelula}${icon}</span></td>`;
+
+          // Cria os chips do Mobile
+          if(c !== "N/A" && c !== "") {
+              let mbClass = "mc-chip ";
+              if (c === "OK") mbClass += "mc-ok";
+              else if (c === "?") mbClass += "mc-qm";
+              else if (isStatusDate(c)) mbClass += "mc-dt";
+              
+              miniBadgesMobile += `<div class="${mbClass}"><span class="mc-chip-lbl">${nomeItem}</span><span class="mc-chip-val">${conteudoCelula}</span></div>`;
+          }
         }
 
         const obs = r[COLS.OBS] || "";
-        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${obs}">${obs}</small></td>`;
+        html += `<td><small class="text-muted d-inline-block text-truncate" style="max-width: 150px;" title="${escapeHtml(obs)}">${escapeHtml(obs)}</small></td>`;
         html += `</tr>`;
+
+        // CARTÃO MOBILE - FIRMADAS
+        htmlMobile += `
+        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+            <div class="mc-header">
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
+                </div>
+                <span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span>
+            </div>
+            <div class="mc-body">
+                <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
+                <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
+                
+                <div class="mc-kpi-grid mt-2">
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Compras</span>
+                        <span class="mc-kpi-val ${resCompras.valor >= 100 ? "text-success" : "text-warning"}">${resCompras.texto}</span>
+                    </div>
+                </div>
+            </div>
+            ${miniBadgesMobile ? `<div class="mc-footer-scroll"><div class="mc-chips-container">${miniBadgesMobile}</div></div>` : ''}
+        </div>
+        `;
       });
 
     } else {
+      // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
       const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
@@ -776,46 +684,85 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         totVal += val;
         
         const pctOrcado = totalOrcadoGeral > 0 ? ((val / totalOrcadoGeral) * 100).toFixed(1) + "%" : "0.0%";
+        const res = calcularPorcentagem(r);
+        const resCompras = calcularStatusComprasVirtual(r);
         
-        // Nova Lógica de Cores do Status Geral
         let statusBadgeClass = "days-badge shadow-sm ";
         const stProp = r[COLS.STATUS_PROPOSTA] || "";
-        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";        // Vermelho
-        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok"; // Verde
-        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";       // Azul
-        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    // Laranja
+        if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";        
+        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok"; 
+        else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";       
+        else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    
         else statusBadgeClass += "bg-light text-secondary";
 
+        // LINHA DESKTOP - GERAL
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
         html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
-        html += `<td><strong>${r[COLS.OBRA] || ""}</strong></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${r[COLS.CLIENTE]}">${r[COLS.CLIENTE] || "-"}</div></td>`;
+        html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${r[COLS.ITEM_GERAL]}">${r[COLS.ITEM_GERAL] || "-"}</div></td>`;
-        html += `<td class="td-read-left"><small class="fw-bold">${r[COLS.CATEGORIA_GERAL] || "-"}</small><br><small class="text-muted">${r[COLS.SEGMENTO] || "-"}</small></td>`;
-        html += `<td>${r[COLS.RESPONSAVEL] || "-"}</td>`;
-        html += `<td>${r[COLS.COMPLEXIDADE] || "-"}</td>`;
-        html += `<td>${r[COLS.UF] || "-"}</td>`;
-        html += `<td><div class="text-truncate" style="max-width:120px" title="${r[COLS.ETAPA]}">${r[COLS.ETAPA] || "-"}</div></td>`;
-        html += `<td>${r[COLS.DIAS_PRAZO] || "-"}</td>`;
-        html += `<td>${r[COLS.NF] || "-"}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
+        html += `<td class="td-read-left"><small class="fw-bold">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</small><br><small class="text-muted">${escapeHtml(r[COLS.SEGMENTO] || "-")}</small></td>`;
+        html += `<td>${escapeHtml(r[COLS.RESPONSAVEL] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.COMPLEXIDADE] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.UF] || "-")}</td>`;
+        html += `<td><div class="text-truncate" style="max-width:120px" title="${escapeHtml(r[COLS.ETAPA])}">${escapeHtml(r[COLS.ETAPA] || "-")}</div></td>`;
+        html += `<td>${escapeHtml(r[COLS.DIAS_PRAZO] || "-")}</td>`;
+        html += `<td>${escapeHtml(r[COLS.NF] || "-")}</td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
         html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
-        
         if (isFrustrada) {
           html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
         }
         html += `</tr>`;
+
+        // CARTÃO MOBILE - GERAL (Com o Item de 3 palavras e ... )
+        let itemStr = String(r[COLS.ITEM_GERAL] || "").trim();
+        let words = itemStr.split(/\s+/);
+        let itemDisplay = words.length > 3 ? words.slice(0, 3).join(" ") + "..." : (itemStr || "-");
+
+        htmlMobile += `
+        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+            <div class="mc-header">
+                <div class="mc-obra-wrap">
+                    <i class="bi bi-folder2-open"></i>
+                    <span class="mc-obra-title">${escapeHtml(r[COLS.OBRA] || "")}</span>
+                </div>
+                <span class="${statusBadgeClass}">${stProp || "-"}</span>
+            </div>
+            <div class="mc-body">
+                <div class="mc-client text-truncate">${escapeHtml(r[COLS.CLIENTE] || "Cliente não informado")}</div>
+                <div class="mc-category text-truncate">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div>
+                
+                <div class="mc-kpi-grid mt-2">
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Abertura</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
+                    </div>
+                    <div class="mc-kpi">
+                        <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
+                        <span class="mc-kpi-val text-primary">R$ ${formatMoneyBR(val)}</span>
+                    </div>
+                    <div class="mc-kpi" style="grid-column: span 2;">
+                        <span class="mc-kpi-lbl">Item</span>
+                        <span class="mc-kpi-val text-truncate" style="max-width: 100%;" title="${escapeHtml(itemStr)}">${escapeHtml(itemDisplay)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
       });
     }
 
     if (dados.length === 0) {
       body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhum registro encontrado nesta visualização.</td></tr>`;
+      if(mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
     } else {
       body.classList.remove('animate-fade-up');
       void body.offsetWidth;
       body.classList.add('animate-fade-up');
       requestAnimationFrame(() => { body.innerHTML = html; });
+      if(mobileContainer) mobileContainer.innerHTML = htmlMobile;
     }
 
     const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
@@ -823,6 +770,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     document.getElementById('resumoValor').innerText = formatMoneyBR(totVal);
     document.getElementById('resumoCustoMedio').innerText = formatMoneyBR(custoMedio);
     document.getElementById('resumoProxima').innerText = currentStatusFilter === 'FIRMADAS' ? maiorAtraso.texto : '-';
+    requestAnimationFrame(recalibrarLayoutAplicacao);
   }
 
   function carregarGrade() {
@@ -863,6 +811,52 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         </div>
       </div>`;
     }).join('');
+  }
+
+  function carregar() {
+    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Sincronizando carteira 2026 com o ERP...</span></td></tr>`;
+    const mobileContainer = document.getElementById('mobileCardsContainer');
+    if (mobileContainer) {
+      mobileContainer.innerHTML = `<div class=\"text-center py-5 text-muted\"><div class=\"spinner-border text-primary spinner-border-sm me-2\" role=\"status\"></div><span class=\"fw-bold\">Sincronizando carteira 2026 com o ERP...</span></div>`;
+    }
+    
+    // CHAMADA ORIGINAL COM O FILTRO DE ANO ADICIONADO
+    callServer('sincronizarEFetch', [currentAnoFilter], data => {
+      if (!Array.isArray(data) || data.length === 0) { 
+        renderizar([]); 
+        return; 
+      }
+      dadosLocais = data.map((r, i) => ({ content: r, originalIndex: i }));
+      renderizar(dadosLocais.slice(1));
+    }, msg => {
+      if (msg === "motorbackend.js ausente.") return;
+
+      const erroHtmlDesktop = `
+        <tr><td colspan="20" class="text-center py-5 text-danger">
+          <i class="bi bi-database-x me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
+          <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
+          <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
+            Motivo Retornado pelo Banco:<br>
+            <strong class="text-danger">${escapeHtml(msg)}</strong>
+          </span><br>
+        </td></tr>
+      `;
+      document.getElementById('tabBody').innerHTML = erroHtmlDesktop;
+
+      const mobileContainer = document.getElementById('mobileCardsContainer');
+      if (mobileContainer) {
+        mobileContainer.innerHTML = `
+          <div class="text-center py-5 text-danger px-3">
+            <i class="bi bi-database-x d-block mb-3" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
+            <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
+              Motivo Retornado pelo Banco:<br>
+              <strong class="text-danger">${escapeHtml(msg)}</strong>
+            </span>
+          </div>
+        `;
+      }
+    });
   }
 
   function atualizarResumoItem(id) {
@@ -921,7 +915,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (inputForn) inputForn.value = document.getElementById(`${id}_forn_val`).value;
     if (inputOc) inputOc.value = document.getElementById(`${id}_oc_val`).value;
     
-    // Mostra o valor limpo sem cêntimos infinitos no modal
     const vRaw = document.getElementById(`${id}_valor_val`).value;
     if (inputValor) inputValor.value = (vRaw !== "" && vRaw !== null) ? parseMoneyFlexible(vRaw).toFixed(2).replace('.00', '') : "";
     
@@ -974,33 +967,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       if (box) box.classList.add('expanded'); if (qDesc) qDesc.value = '';
     }
     atualizarResumoItem(id); if (id !== 'fatur') atualizarFaturamentoPrevistoFormulario();
-  }
-
-  function carregar() {
-    document.getElementById('tabBody').innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div><span class="fw-bold">Conectando ao Supabase (ERP)...</span></td></tr>`;
-    
-    callServer('sincronizarEFetch', [], data => {
-      if (!Array.isArray(data) || data.length === 0) { 
-        notify("Nenhuma obra encontrada na View do ERP."); 
-        renderizar([]); 
-        return; 
-      }
-      dadosLocais = data.map((r, i) => ({ content: r, originalIndex: i }));
-      renderizar(dadosLocais.slice(1));
-    }, msg => {
-      if (msg === "motorbackend.js ausente.") return;
-      notify("Erro de Conexão");
-      document.getElementById('tabBody').innerHTML = `
-        <tr><td colspan="20" class="text-center py-5 text-danger">
-          <i class="bi bi-database-x me-2 d-block mb-3" style="font-size: 2.5rem;"></i>
-          <h5 class="fw-bold">Falha ao Ler a Tabela do ERP</h5>
-          <span class="text-muted mt-2 d-inline-block" style="font-size:0.9rem;">
-            Motivo Retornado pelo Banco:<br>
-            <strong class="text-danger">${escapeHtml(msg)}</strong>
-          </span><br>
-        </td></tr>
-      `;
-    });
   }
 
   function limparCamposDetalhesItem(id) {
@@ -1056,7 +1022,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     try {
       atualizarFaturamentoPrevistoFormulario();
       
-      // Limpa os valores monetários antes de salvar para o banco ficar perfeito
       const valorLimpo = document.getElementById('valor').value !== "" ? String(parseMoneyFlexible(document.getElementById('valor').value)) : "";
       
       const obj = { 
@@ -1096,7 +1061,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     document.getElementById('obra').value = r[COLS.OBRA] || "";
     document.getElementById('cliente').value = r[COLS.CLIENTE] || ""; 
     
-    // Coloca os números visualmente limpos nos inputs de edição, tirando ".000000" do banco
     const rawValor = r[COLS.VALOR];
     document.getElementById('valor').value = (rawValor !== "" && rawValor !== null) ? parseMoneyFlexible(rawValor).toFixed(2).replace('.00', '') : "";
     
@@ -1522,62 +1486,103 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     } catch (e) { console.error(e); notify('Não foi possível montar o relatório em PDF.'); }
   }
 
+  let eventosResponsivosRegistrados = false;
+  let blindagemModaisRegistrada = false;
+
+  function sincronizarAnoFixoNaInterface() {
+    const anoEfetivo = '26';
+    const selectMobile = document.getElementById('anoFilterMobile');
+    const selectPC = document.getElementById('anoFilterPC');
+
+    if (selectMobile) selectMobile.value = anoEfetivo;
+    if (selectPC) selectPC.value = anoEfetivo;
+  }
+
+  function atualizarShellResponsivo() {
+    const root = document.documentElement;
+    const body = document.body;
+    if (!root || !body) return;
+
+    const vv = window.visualViewport;
+    const altura = Math.round(vv ? vv.height : window.innerHeight);
+    const largura = Math.round(vv ? vv.width : window.innerWidth);
+
+    root.style.setProperty('--app-vh', `${altura}px`);
+    root.style.setProperty('--app-vw', `${largura}px`);
+
+    const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+    body.classList.toggle('device-mobile-shell', isMobile);
+    body.classList.toggle('device-desktop-shell', !isMobile);
+  }
+
   function ajustarRolagemDaTabela() {
-    const viewport = document.querySelector('.table-viewport'); if (!viewport) return;
-    const viewportTop = viewport.getBoundingClientRect().top; const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const margemInferior = window.innerWidth <= 768 ? 32 : 40; const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
-    viewport.style.maxHeight = `${alturaDisponivel}px`; viewport.classList.add('table-scroll-locked');
+    const viewport = document.querySelector('.table-viewport');
+    if (!viewport) return;
+
+    const viewportTop = viewport.getBoundingClientRect().top;
+    const alturaJanela = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    const margemInferior = document.body.classList.contains('device-mobile-shell') ? 24 : 36;
+    const alturaDisponivel = Math.max(260, alturaJanela - viewportTop - margemInferior);
+
+    viewport.style.maxHeight = `${alturaDisponivel}px`;
+    viewport.classList.add('table-scroll-locked');
   }
 
-  window.addEventListener('resize', requestViewportMetricsSync);
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', requestViewportMetricsSync);
-    window.visualViewport.addEventListener('scroll', requestViewportMetricsSync);
+  function recalibrarLayoutAplicacao() {
+    atualizarShellResponsivo();
+    sincronizarAnoFixoNaInterface();
+    ajustarRolagemDaTabela();
   }
 
-  window.addEventListener('orientationchange', () => {
-    setTimeout(requestViewportMetricsSync, 80);
-    setTimeout(requestViewportMetricsSync, 240);
-  });
+  function registrarEventosResponsivos() {
+    if (eventosResponsivosRegistrados) return;
+    eventosResponsivosRegistrados = true;
 
-  document.addEventListener('focusin', event => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.matches('input, textarea, select')) return;
-    centralizarCampoAtivoNoModal(target);
-    requestViewportMetricsSync();
-    fecharMenuExtracao();
-  }, true);
+    const handler = () => {
+      fecharMenuExtracao();
+      recalibrarLayoutAplicacao();
+    };
 
-  document.addEventListener('focusout', event => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!target.matches('input, textarea, select')) return;
-    setTimeout(requestViewportMetricsSync, 120);
-  }, true);
+    window.addEventListener('resize', handler);
+    window.addEventListener('orientationchange', handler);
 
-  document.addEventListener('shown.bs.modal', event => {
-    if (event.target instanceof HTMLElement) ajustarModalElemento(event.target);
-    syncBodyModalState();
-    requestViewportMetricsSync();
-  });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handler);
+      window.visualViewport.addEventListener('scroll', handler);
+    }
+  }
 
-  document.addEventListener('hidden.bs.modal', () => {
-    syncBodyModalState();
-    setTimeout(requestViewportMetricsSync, 60);
-  });
+  function configurarBlindagemViewportDosModais() {
+    if (blindagemModaisRegistrada) return;
+    blindagemModaisRegistrada = true;
 
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') fecharMenuExtracao();
-  });
+    ['modalObra', 'modalCompraItem', 'modalPendenciaItem', 'modalResumoGeral', 'modalExtracaoRelatorio'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
 
-  window.onload = () => { 
-    syncViewportMetrics();
+      el.addEventListener('shown.bs.modal', () => {
+        document.body.classList.add('app-modal-open');
+        setTimeout(recalibrarLayoutAplicacao, 30);
+      });
+
+      el.addEventListener('hidden.bs.modal', () => {
+        if (!document.querySelector('.modal.show')) {
+          document.body.classList.remove('app-modal-open');
+        }
+        setTimeout(recalibrarLayoutAplicacao, 30);
+      });
+    });
+  }
+
+  window.onload = () => {
+    currentAnoFilter = '26';
     initModais();
+    configurarBlindagemViewportDosModais();
+    registrarEventosResponsivos();
     configurarCabecalhoData();
     carregarGrade();
-    carregar(); 
-    setTimeout(requestViewportMetricsSync, 120);
-    setTimeout(requestViewportMetricsSync, 360);
+    sincronizarAnoFixoNaInterface();
+    recalibrarLayoutAplicacao();
+    carregar();
+    setTimeout(recalibrarLayoutAplicacao, 120);
   };
