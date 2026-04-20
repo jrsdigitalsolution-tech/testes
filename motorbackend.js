@@ -11,9 +11,9 @@ function getSafeId(str) {
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
 }
 
-function parseValorERP(value) {
-  if (value === null || value === undefined || value === "") return 0;
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+function parseMoneyFlexible(value) {
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
 
   let str = String(value).trim();
   if (!str) return 0;
@@ -24,40 +24,47 @@ function parseValorERP(value) {
     str = str.replace(/\./g, '').replace(',', '.');
   } else {
     const dotCount = (str.match(/\./g) || []).length;
-    if (dotCount > 1) str = str.replace(/\./g, '');
+    if (dotCount > 1) {
+      str = str.replace(/\./g, '');
+    }
   }
 
   str = str.replace(/[^\d.-]/g, '');
-  const num = parseFloat(str);
-  return Number.isFinite(num) ? num : 0;
+  const n = parseFloat(str);
+  return Number.isFinite(n) ? n : 0;
 }
 
-function addValorERP(baseValue, valorSomado) {
-  const baseNum = parseValorERP(baseValue);
-  return String(baseNum + valorSomado);
-}
-
-function adicionarUnico(setRef, value) {
+function addUnique(setRef, value) {
   const txt = String(value || '').trim();
   if (txt) setRef.add(txt);
 }
 
-function montarObservacoesConsolidadas(observacoesERP, itensERP, nfsERP) {
+function pickFirstNonEmpty(...values) {
+  for (const value of values) {
+    if (value === 0) return value;
+    if (value !== null && value !== undefined && String(value).trim() !== '') {
+      return value;
+    }
+  }
+  return "";
+}
+
+function buildObservacoesConsolidadas(bloco) {
   const partes = [];
 
-  if (itensERP.size > 0) {
-    partes.push(`ITENS ERP: ${Array.from(itensERP).join(' / ')}`);
+  if (bloco.observacoes.size > 0) {
+    partes.push(Array.from(bloco.observacoes).join(" | "));
   }
 
-  if (nfsERP.size > 0) {
-    partes.push(`NF(S): ${Array.from(nfsERP).join(' / ')}`);
+  if (bloco.nfs.size > 0) {
+    partes.push("NF(s): " + Array.from(bloco.nfs).join(" / "));
   }
 
-  if (observacoesERP.size > 0) {
-    partes.push(`OBS ERP: ${Array.from(observacoesERP).join(' | ')}`);
+  if (bloco.itens.size > 0) {
+    partes.push("Itens ERP: " + Array.from(bloco.itens).join(" / "));
   }
 
-  return partes.join(' • ');
+  return partes.join(" • ");
 }
 
 const motorBackend = {
@@ -78,7 +85,7 @@ const motorBackend = {
         ["DATA", "OBRA", "CLIENTE", "VALOR", "DIAS PRAZO", ...ITENS_ORDEM, "OBSERVAÇÕES", "DETALHES_JSON", "CPMV", "ITEM", "CATEGORIA"]
       ];
 
-      // Dicionário (memória) para consolidação de obras
+      // Dicionário (memória) para consolidar obras
       const obrasProcessadas = {};
 
       // 3. Varre os dados do JSON e traduz para a matriz do painel
@@ -89,37 +96,10 @@ const motorBackend = {
 
           // --- FILTRO: APENAS OBRAS DE 2026 (IGNORA 2023 E OUTROS) ---
           const matchNum = numObra.match(/26[.,-]?\d{3,}/);
-          if (!matchNum) return; 
+          if (!matchNum) return;
 
           const numObraLimpo = matchNum[0];
-          const itemAtual = String(erp.item || '').trim();
-          const catAtual = String(erp.categoria || '').trim();
-          const nfAtual = String(erp.nf || '').trim();
-          const obsAtual = String(erp.observacoes || erp.obs || erp.observacao || '').trim();
-          const valorERP = parseValorERP(erp.p_total);
-
-          // --- CONSOLIDAÇÃO DE DUPLICATAS (AGRUPAMENTO) ---
-          if (obrasProcessadas[numObraLimpo]) {
-            const obraAgrupada = obrasProcessadas[numObraLimpo];
-            const linhaExistente = obraAgrupada.linha;
-
-            linhaExistente[3] = addValorERP(linhaExistente[3], valorERP);
-
-            adicionarUnico(obraAgrupada.itensSet, itemAtual);
-            adicionarUnico(obraAgrupada.categoriasSet, catAtual);
-            adicionarUnico(obraAgrupada.nfsSet, nfAtual);
-            adicionarUnico(obraAgrupada.observacoesSet, obsAtual);
-
-            linhaExistente[17] = montarObservacoesConsolidadas(
-              obraAgrupada.observacoesSet,
-              obraAgrupada.itensSet,
-              obraAgrupada.nfsSet
-            );
-            linhaExistente[20] = Array.from(obraAgrupada.itensSet).join(' / ');
-            linhaExistente[21] = Array.from(obraAgrupada.categoriasSet).join(' / ');
-            linhaExistente[29] = Array.from(obraAgrupada.nfsSet).join(' / ');
-            return; 
-          }
+          const valorERP = erp.p_total !== null ? erp.p_total : "0";
 
           // Lógica automática para definir o STATUS DA PROPOSTA
           let statusProposta = "ENVIADAS";
@@ -135,61 +115,86 @@ const motorBackend = {
             statusProposta = "FIRMADAS";
           }
 
-          const itensSet = new Set();
-          const categoriasSet = new Set();
-          const nfsSet = new Set();
-          const observacoesSet = new Set();
+          if (!obrasProcessadas[numObraLimpo]) {
+            obrasProcessadas[numObraLimpo] = {
+              linha: [
+                erp.data_firmada || "", // 0: DATA FIRMADA
+                numObraLimpo, // 1: OBRA LIMPA
+                erp.cliente || "", // 2: CLIENTE
+                valorERP || "", // 3: VALOR
+                erp.praz || erp.pz || "", // 4: DIAS_PRAZO
 
-          adicionarUnico(itensSet, itemAtual);
-          adicionarUnico(categoriasSet, catAtual);
-          adicionarUnico(nfsSet, nfAtual);
-          adicionarUnico(observacoesSet, obsAtual);
+                // 5 a 16: Itens de controle em branco
+                "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
 
-          const observacaoConsolidada = montarObservacoesConsolidadas(observacoesSet, itensSet, nfsSet);
+                "", // 17: OBSERVAÇÕES
+                "{}", // 18: DETALHES JSON
+                erp.cpmv || 0, // 19: CPMV
+                erp.item || "", // 20: ITEM
+                erp.categoria || "", // 21: CATEGORIA
 
-          // Cria a linha nova da Obra
-          const novaLinha = [
-            erp.data_firmada || "", // 0: DATA FIRMADA
-            numObraLimpo, // 1: OBRA LIMPA
-            erp.cliente || "", // 2: CLIENTE
-            String(valorERP), // 3: VALOR
-            erp.praz || erp.pz || "", // 4: DIAS_PRAZO
+                // 22 a 32: INFORMAÇÕES EXTRAS
+                statusProposta, // 22: STATUS GERAL DA PROPOSTA
+                erp.data_abertura || "", // 23: ABERTURA
+                erp.segmento || "", // 24: SEGMENTO
+                erp.vendedor || erp.responsavel || "", // 25: RESPONSAVEL
+                erp.complexidade || "", // 26: COMPLEXIDADE
+                erp.uf || "", // 27: UF
+                erp.etapa || "", // 28: ETAPA
+                erp.nf || "", // 29: NF
+                erp.data_frustrada || "", // 30: FRUSTRADA
+                erp.data_enviada || "", // 31: ENVIADA
+                erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
+              ],
+              valorTotal: parseMoneyFlexible(valorERP),
+              itens: new Set(),
+              categorias: new Set(),
+              nfs: new Set(),
+              observacoes: new Set()
+            };
+          } else {
+            const blocoExistente = obrasProcessadas[numObraLimpo];
+            blocoExistente.valorTotal += parseMoneyFlexible(valorERP);
 
-            // 5 a 16: Itens de controle em branco
-            "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
+            // Só preenche campos-base se estiverem vazios, preservando o comportamento atual ao máximo
+            blocoExistente.linha[0] = pickFirstNonEmpty(blocoExistente.linha[0], erp.data_firmada);
+            blocoExistente.linha[2] = pickFirstNonEmpty(blocoExistente.linha[2], erp.cliente);
+            blocoExistente.linha[4] = pickFirstNonEmpty(blocoExistente.linha[4], erp.praz, erp.pz);
+            blocoExistente.linha[19] = pickFirstNonEmpty(blocoExistente.linha[19], erp.cpmv || 0);
+            blocoExistente.linha[22] = pickFirstNonEmpty(blocoExistente.linha[22], statusProposta);
+            blocoExistente.linha[23] = pickFirstNonEmpty(blocoExistente.linha[23], erp.data_abertura);
+            blocoExistente.linha[24] = pickFirstNonEmpty(blocoExistente.linha[24], erp.segmento);
+            blocoExistente.linha[25] = pickFirstNonEmpty(blocoExistente.linha[25], erp.vendedor, erp.responsavel);
+            blocoExistente.linha[26] = pickFirstNonEmpty(blocoExistente.linha[26], erp.complexidade);
+            blocoExistente.linha[27] = pickFirstNonEmpty(blocoExistente.linha[27], erp.uf);
+            blocoExistente.linha[28] = pickFirstNonEmpty(blocoExistente.linha[28], erp.etapa);
+            blocoExistente.linha[30] = pickFirstNonEmpty(blocoExistente.linha[30], erp.data_frustrada);
+            blocoExistente.linha[31] = pickFirstNonEmpty(blocoExistente.linha[31], erp.data_enviada);
+            blocoExistente.linha[32] = pickFirstNonEmpty(blocoExistente.linha[32], erp.data_faturam, erp.data_faturamento);
+          }
 
-            observacaoConsolidada, // 17: OBSERVAÇÕES
-            "{}", // 18: DETALHES JSON
-            erp.cpmv || 0, // 19: CPMV
-            Array.from(itensSet).join(' / '), // 20: ITEM
-            Array.from(categoriasSet).join(' / '), // 21: CATEGORIA
+          const bloco = obrasProcessadas[numObraLimpo];
 
-            // 22 a 32: INFORMAÇÕES EXTRAS
-            statusProposta, // 22: STATUS GERAL DA PROPOSTA
-            erp.data_abertura || "", // 23: ABERTURA
-            erp.segmento || "", // 24: SEGMENTO
-            erp.vendedor || erp.responsavel || "", // 25: RESPONSAVEL
-            erp.complexidade || "", // 26: COMPLEXIDADE
-            erp.uf || "", // 27: UF
-            erp.etapa || "", // 28: ETAPA
-            Array.from(nfsSet).join(' / '), // 29: NF
-            erp.data_frustrada || "", // 30: FRUSTRADA
-            erp.data_enviada || "", // 31: ENVIADA
-            erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
-          ];
+          addUnique(bloco.itens, erp.item);
+          addUnique(bloco.categorias, erp.categoria);
+          addUnique(bloco.nfs, erp.nf);
+          addUnique(bloco.observacoes, erp.observacoes);
+          addUnique(bloco.observacoes, erp.observacao);
+          addUnique(bloco.observacoes, erp.obs);
+          addUnique(bloco.observacoes, erp.analise);
+        });
 
-          // Guarda na memória
-          obrasProcessadas[numObraLimpo] = {
-            linha: novaLinha,
-            itensSet,
-            categoriasSet,
-            nfsSet,
-            observacoesSet
-          };
+        // Consolidação final antes do retorno
+        const listaObras = Object.values(obrasProcessadas).map(bloco => {
+          bloco.linha[3] = bloco.valorTotal;
+          bloco.linha[17] = buildObservacoesConsolidadas(bloco);
+          bloco.linha[20] = Array.from(bloco.itens).join(" / ");
+          bloco.linha[21] = Array.from(bloco.categorias).join(" / ");
+          bloco.linha[29] = Array.from(bloco.nfs).join(" / ");
+          return bloco.linha;
         });
 
         // Ordenação crescente e definitiva
-        const listaObras = Object.values(obrasProcessadas).map(reg => reg.linha);
         listaObras.sort((a, b) => {
           return a[1].localeCompare(b[1], 'pt-BR', { numeric: true });
         });
