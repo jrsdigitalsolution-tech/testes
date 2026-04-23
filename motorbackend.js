@@ -39,27 +39,6 @@ function addUnique(setRef, value) {
   if (txt) setRef.add(txt);
 }
 
-function normalizeNFKey(value) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '')
-    .replace(/[^A-Z0-9./_-]/g, '');
-}
-
-function buildLinhaSemNFKey(erp, valorERP) {
-  return [
-    String(erp.item || '').trim().toUpperCase(),
-    String(erp.categoria || '').trim().toUpperCase(),
-    String(erp.cliente || '').trim().toUpperCase(),
-    String(erp.data_firmada || '').trim(),
-    String(erp.data_abertura || '').trim(),
-    String(erp.data_enviada || '').trim(),
-    String(erp.data_faturam || erp.data_faturamento || '').trim(),
-    String(valorERP || '').trim()
-  ].join('|');
-}
-
 function pickFirstNonEmpty(...values) {
   for (const value of values) {
     if (value === 0) return value;
@@ -68,6 +47,26 @@ function pickFirstNonEmpty(...values) {
     }
   }
   return "";
+}
+
+function normalizeNF(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
+}
+
+function buildRegistroSemNFKey(erp) {
+  return [
+    String(erp.obra || '').trim(),
+    String(erp.p_total ?? '').trim(),
+    String(erp.item || '').trim(),
+    String(erp.categoria || '').trim(),
+    String(erp.cliente || '').trim(),
+    String(erp.data_faturam || erp.data_faturamento || '').trim(),
+    String(erp.data_enviada || '').trim(),
+    String(erp.etapa || '').trim()
+  ].join('|');
 }
 
 function buildObservacoesConsolidadas(bloco) {
@@ -121,6 +120,11 @@ const motorBackend = {
 
           const numObraLimpo = matchNum[0];
           const valorERP = erp.p_total !== null ? erp.p_total : "0";
+          const valorAtual = parseMoneyFlexible(valorERP);
+          const nfNormalizada = normalizeNF(erp.nf);
+          const chaveContabilizacao = nfNormalizada
+            ? `NF:${nfNormalizada}`
+            : `SEMNF:${buildRegistroSemNFKey(erp)}`;
 
           // Lógica automática para definir o STATUS DA PROPOSTA
           let statusProposta = "ENVIADAS";
@@ -142,7 +146,7 @@ const motorBackend = {
                 erp.data_firmada || "", // 0: DATA FIRMADA
                 numObraLimpo, // 1: OBRA LIMPA
                 erp.cliente || "", // 2: CLIENTE
-                valorERP || "", // 3: VALOR
+                "", // 3: VALOR (consolidado ao final)
                 erp.praz || erp.pz || "", // 4: DIAS_PRAZO
 
                 // 5 a 16: Itens de controle em branco
@@ -168,11 +172,11 @@ const motorBackend = {
                 erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
               ],
               valorTotal: 0,
+              chavesContabilizadas: new Set(),
               itens: new Set(),
               categorias: new Set(),
               nfs: new Set(),
-              observacoes: new Set(),
-              documentosContabilizados: new Set()
+              observacoes: new Set()
             };
           } else {
             const blocoExistente = obrasProcessadas[numObraLimpo];
@@ -195,12 +199,10 @@ const motorBackend = {
           }
 
           const bloco = obrasProcessadas[numObraLimpo];
-          const nfNormalizada = normalizeNFKey(erp.nf);
-          const chaveContabilizacao = nfNormalizada ? `NF:${nfNormalizada}` : `SEMNF:${buildLinhaSemNFKey(erp, valorERP)}`;
 
-          if (!bloco.documentosContabilizados.has(chaveContabilizacao)) {
-            bloco.valorTotal += parseMoneyFlexible(valorERP);
-            bloco.documentosContabilizados.add(chaveContabilizacao);
+          if (!bloco.chavesContabilizadas.has(chaveContabilizacao)) {
+            bloco.valorTotal += valorAtual;
+            bloco.chavesContabilizadas.add(chaveContabilizacao);
           }
 
           addUnique(bloco.itens, erp.item);
