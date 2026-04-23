@@ -7,6 +7,23 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   
   let currentStatusFilter = 'FIRMADAS'; // Original Intacto
   let currentAnoFilter = '26'; 
+  let currentFaturamentoMesInicio = 'TODOS';
+  let currentFaturamentoMesFim = 'TODOS';
+
+  const MESES_FATURAMENTO = [
+    { valor: 1, label: 'Janeiro' },
+    { valor: 2, label: 'Fevereiro' },
+    { valor: 3, label: 'Março' },
+    { valor: 4, label: 'Abril' },
+    { valor: 5, label: 'Maio' },
+    { valor: 6, label: 'Junho' },
+    { valor: 7, label: 'Julho' },
+    { valor: 8, label: 'Agosto' },
+    { valor: 9, label: 'Setembro' },
+    { valor: 10, label: 'Outubro' },
+    { valor: 11, label: 'Novembro' },
+    { valor: 12, label: 'Dezembro' }
+  ];
 
   function mudarAno(ano) {
     const anoEfetivo = '26';
@@ -22,6 +39,98 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     carregar();
   }
 
+  function getLimiteMesFiltroConcluidas() {
+    const hoje = new Date();
+    const mesAtual = hoje.getMonth() + 1;
+    return Math.min(Math.max(mesAtual, 1), 12);
+  }
+
+  function normalizarMesFiltroConcluidas(valor) {
+    if (valor === null || valor === undefined || valor === '' || valor === 'TODOS') return 'TODOS';
+    const num = parseInt(String(valor), 10);
+    const limite = getLimiteMesFiltroConcluidas();
+    if (!Number.isFinite(num) || num < 1 || num > limite) return 'TODOS';
+    return String(num);
+  }
+
+  function preencherOpcoesFiltroConcluidas() {
+    const selects = [
+      document.getElementById('faturamentoMesInicio'),
+      document.getElementById('faturamentoMesFim')
+    ].filter(Boolean);
+
+    if (!selects.length) return;
+
+    const limite = getLimiteMesFiltroConcluidas();
+    const options = ['<option value="TODOS">Todo período</option>']
+      .concat(MESES_FATURAMENTO
+        .filter(m => m.valor <= limite)
+        .map(m => `<option value="${m.valor}">${m.label}</option>`))
+      .join('');
+
+    selects.forEach(select => {
+      const valorAtual = select.value;
+      select.innerHTML = options;
+      select.value = normalizarMesFiltroConcluidas(valorAtual);
+    });
+  }
+
+  function sincronizarFiltroConcluidasNaInterface() {
+    const inicioEl = document.getElementById('faturamentoMesInicio');
+    const fimEl = document.getElementById('faturamentoMesFim');
+    if (inicioEl) inicioEl.value = normalizarMesFiltroConcluidas(currentFaturamentoMesInicio);
+    if (fimEl) fimEl.value = normalizarMesFiltroConcluidas(currentFaturamentoMesFim);
+  }
+
+  function atualizarVisibilidadeFiltroConcluidas() {
+    const row = document.getElementById('filtroConcluidasFaturamento');
+    if (!row) return;
+    row.classList.toggle('d-none', currentStatusFilter !== 'CONCLUIDAS');
+  }
+
+  function aplicarFiltroConcluidasPorMes() {
+    currentFaturamentoMesInicio = normalizarMesFiltroConcluidas(document.getElementById('faturamentoMesInicio')?.value);
+    currentFaturamentoMesFim = normalizarMesFiltroConcluidas(document.getElementById('faturamentoMesFim')?.value);
+
+    if (currentFaturamentoMesInicio !== 'TODOS' && currentFaturamentoMesFim !== 'TODOS') {
+      const inicioNum = parseInt(currentFaturamentoMesInicio, 10);
+      const fimNum = parseInt(currentFaturamentoMesFim, 10);
+      if (inicioNum > fimNum) {
+        const temp = currentFaturamentoMesInicio;
+        currentFaturamentoMesInicio = currentFaturamentoMesFim;
+        currentFaturamentoMesFim = temp;
+      }
+    }
+
+    sincronizarFiltroConcluidasNaInterface();
+    renderizar(dadosLocais.slice(1));
+  }
+
+  function getRangeFiltroConcluidas() {
+    const limite = getLimiteMesFiltroConcluidas();
+    const inicio = currentFaturamentoMesInicio === 'TODOS' ? 1 : parseInt(currentFaturamentoMesInicio, 10);
+    const fim = currentFaturamentoMesFim === 'TODOS' ? limite : parseInt(currentFaturamentoMesFim, 10);
+
+    if (!Number.isFinite(inicio) || !Number.isFinite(fim)) return null;
+    return { inicio, fim };
+  }
+
+  function linhaConcluidaDentroDoPeriodo(row) {
+    if (currentStatusFilter !== 'CONCLUIDAS') return true;
+
+    const semFiltro = currentFaturamentoMesInicio === 'TODOS' && currentFaturamentoMesFim === 'TODOS';
+    if (semFiltro) return true;
+
+    const dataFat = parseDataUniversal(row[COLS.DATA_FATURAMENTO]);
+    if (!dataFat) return false;
+
+    const range = getRangeFiltroConcluidas();
+    if (!range) return true;
+
+    const mesLinha = dataFat.getMonth() + 1;
+    return mesLinha >= range.inicio && mesLinha <= range.fim;
+  }
+
   function setFilter(status) {
     currentStatusFilter = status;
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -34,6 +143,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     if (selectEl && selectEl.value !== status) {
       selectEl.value = status;
     }
+    atualizarVisibilidadeFiltroConcluidas();
+    sincronizarFiltroConcluidasNaInterface();
     renderizar(dadosLocais.slice(1));
   }
 
@@ -291,7 +402,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     "STATUS DO PRAZO": "prazo",
     "STATUS DE COMPRAS": "compras",
     "FATUR.": "fatur",
-    "FATURAMENTO": "fatur",
     "ABERTURA": "abertura",
     "STATUS": "status",
     "RESPONSÁVEL": "responsavel",
@@ -546,9 +656,13 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     const body = document.getElementById('tabBody');
     const mobileContainer = document.getElementById('mobileCardsContainer');
 
+    atualizarVisibilidadeFiltroConcluidas();
+    sincronizarFiltroConcluidasNaInterface();
+
     const dados = dadosOriginais.filter(d => {
       if (currentStatusFilter === 'TODAS') return true;
-      return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
+      if (d.content[COLS.STATUS_PROPOSTA] !== currentStatusFilter) return false;
+      return linhaConcluidaDentroDoPeriodo(d.content);
     });
 
     const dadosOrdenados = ordenarDados(dados);
@@ -668,9 +782,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     } else {
       // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
-      const isConcluida = currentStatusFilter === 'CONCLUIDAS';
-      const primeiraColunaLabel = isConcluida ? "FATURAMENTO" : "ABERTURA";
-      const labs = [primeiraColunaLabel, "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
+      const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
 
       head.innerHTML = "<tr>" + labs.map(l => {
@@ -699,11 +811,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         else statusBadgeClass += "bg-light text-secondary";
 
         // LINHA DESKTOP - GERAL
-        const dataPrimeiraColuna = isConcluida ? r[COLS.DATA_FATURAMENTO] : r[COLS.DATA_ABERTURA];
-        const labelPrimeiraColunaMobile = isConcluida ? 'Faturamento' : 'Abertura';
-
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
-        html += `<td>${formatDateDisplayBR(dataPrimeiraColuna) || '-'}</td>`;
+        html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
         html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
@@ -742,8 +851,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
-                        <span class="mc-kpi-lbl">${labelPrimeiraColunaMobile}</span>
-                        <span class="mc-kpi-val">${formatDateDisplayBR(dataPrimeiraColuna) || '-'}</span>
+                        <span class="mc-kpi-lbl">Abertura</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
                     </div>
                     <div class="mc-kpi">
                         <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
@@ -1587,6 +1696,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     registrarEventosResponsivos();
     configurarCabecalhoData();
     carregarGrade();
+    preencherOpcoesFiltroConcluidas();
+    atualizarVisibilidadeFiltroConcluidas();
+    sincronizarFiltroConcluidasNaInterface();
     sincronizarAnoFixoNaInterface();
     recalibrarLayoutAplicacao();
     carregar();
