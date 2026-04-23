@@ -12,7 +12,8 @@ const OBRAS_2025_AUTORIZADAS = new Set([
   "25214",
   "25230",
   "25242",
-  "25127"
+  "25127",
+  "25187"
 ]);
 
 function getSafeId(str) {
