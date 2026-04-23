@@ -291,6 +291,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     "STATUS DO PRAZO": "prazo",
     "STATUS DE COMPRAS": "compras",
     "FATUR.": "fatur",
+    "FATURAMENTO": "fatur",
     "ABERTURA": "abertura",
     "STATUS": "status",
     "RESPONSÁVEL": "responsavel",
@@ -667,7 +668,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     } else {
       // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
-      const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
+      const isConcluida = currentStatusFilter === 'CONCLUIDAS';
+      const primeiraColunaLabel = isConcluida ? "FATURAMENTO" : "ABERTURA";
+      const labs = [primeiraColunaLabel, "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
 
       head.innerHTML = "<tr>" + labs.map(l => {
@@ -696,8 +699,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         else statusBadgeClass += "bg-light text-secondary";
 
         // LINHA DESKTOP - GERAL
+        const dataPrimeiraColuna = isConcluida ? r[COLS.DATA_FATURAMENTO] : r[COLS.DATA_ABERTURA];
+        const labelPrimeiraColunaMobile = isConcluida ? 'Faturamento' : 'Abertura';
+
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
-        html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
+        html += `<td>${formatDateDisplayBR(dataPrimeiraColuna) || '-'}</td>`;
         html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
@@ -736,8 +742,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
-                        <span class="mc-kpi-lbl">Abertura</span>
-                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
+                        <span class="mc-kpi-lbl">${labelPrimeiraColunaMobile}</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(dataPrimeiraColuna) || '-'}</span>
                     </div>
                     <div class="mc-kpi">
                         <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
