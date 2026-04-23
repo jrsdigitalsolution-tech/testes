@@ -6,7 +6,7 @@
 
 const ITENS_ORDEM = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIXADORES", "SIST. ELÉT.", "PEÇAS REP.", "SERV.", "MONT.", "FATUR."];
 
-function getSafeId(str) { 
+function getSafeId(str) {
   if (!str) return "";
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
 }
@@ -50,23 +50,53 @@ function pickFirstNonEmpty(...values) {
 }
 
 function normalizeNF(value) {
-  return String(value || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .toUpperCase();
+  return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-function buildRegistroSemNFKey(erp) {
-  return [
-    String(erp.obra || '').trim(),
-    String(erp.p_total ?? '').trim(),
-    String(erp.item || '').trim(),
-    String(erp.categoria || '').trim(),
-    String(erp.cliente || '').trim(),
-    String(erp.data_faturam || erp.data_faturamento || '').trim(),
-    String(erp.data_enviada || '').trim(),
-    String(erp.etapa || '').trim()
-  ].join('|');
+function getDataFaturamentoERP(erp) {
+  return pickFirstNonEmpty(erp.data_faturam, erp.data_faturamento);
+}
+
+function getStatusProposta(erp) {
+  const etapaUp = String(erp.etapa || '').toUpperCase();
+
+  if (erp.data_frustrada) {
+    return "FRUSTRADAS";
+  }
+  if (etapaUp.includes('CONCLU') || erp.data_faturam || erp.data_faturamento) {
+    return "CONCLUIDAS";
+  }
+  if (etapaUp.includes('ENTREGUE')) {
+    return "ENTREGUES";
+  }
+  if (erp.data_firmada) {
+    return "FIRMADAS";
+  }
+  return "ENVIADAS";
+}
+
+function isLinhaCancelada(erp) {
+  const etapaUp = String(erp.etapa || '').toUpperCase();
+  return Boolean(
+    erp.data_frustrada ||
+    etapaUp.includes('CANCEL') ||
+    etapaUp.includes('FRUSTR')
+  );
+}
+
+function isLinhaFinanceiramenteValida(erp) {
+  return !isLinhaCancelada(erp) && normalizeNF(erp.nf) !== '' && String(getDataFaturamentoERP(erp) || '').trim() !== '';
+}
+
+function getStatusPriority(status) {
+  switch (String(status || '').trim()) {
+    case 'CONCLUIDAS': return 5;
+    case 'ENTREGUES': return 4;
+    case 'FIRMADAS': return 3;
+    case 'ENVIADAS': return 2;
+    case 'FRUSTRADAS': return 1;
+    default: return 0;
+  }
 }
 
 function buildObservacoesConsolidadas(bloco) {
@@ -85,6 +115,58 @@ function buildObservacoesConsolidadas(bloco) {
   }
 
   return partes.join(" • ");
+}
+
+function criarLinhaBase(numObraLimpo, erp, statusProposta) {
+  return [
+    erp.data_firmada || "", // 0: DATA FIRMADA
+    numObraLimpo, // 1: OBRA LIMPA
+    erp.cliente || "", // 2: CLIENTE
+    erp.p_total !== null ? erp.p_total : "0", // 3: VALOR
+    erp.praz || erp.pz || "", // 4: DIAS_PRAZO
+
+    // 5 a 16: Itens de controle em branco
+    "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
+
+    "", // 17: OBSERVAÇÕES
+    "{}", // 18: DETALHES JSON
+    erp.cpmv || 0, // 19: CPMV
+    erp.item || "", // 20: ITEM
+    erp.categoria || "", // 21: CATEGORIA
+
+    // 22 a 32: INFORMAÇÕES EXTRAS
+    statusProposta, // 22: STATUS GERAL DA PROPOSTA
+    erp.data_abertura || "", // 23: ABERTURA
+    erp.segmento || "", // 24: SEGMENTO
+    erp.vendedor || erp.responsavel || "", // 25: RESPONSAVEL
+    erp.complexidade || "", // 26: COMPLEXIDADE
+    erp.uf || "", // 27: UF
+    erp.etapa || "", // 28: ETAPA
+    erp.nf || "", // 29: NF
+    erp.data_frustrada || "", // 30: FRUSTRADA
+    erp.data_enviada || "", // 31: ENVIADA
+    getDataFaturamentoERP(erp) || "" // 32: FATURAMENTO
+  ];
+}
+
+function mergeLinhaBase(linha, erp, statusProposta) {
+  linha[0] = pickFirstNonEmpty(linha[0], erp.data_firmada);
+  linha[2] = pickFirstNonEmpty(linha[2], erp.cliente);
+  linha[4] = pickFirstNonEmpty(linha[4], erp.praz, erp.pz);
+  linha[19] = pickFirstNonEmpty(linha[19], erp.cpmv || 0);
+  linha[23] = pickFirstNonEmpty(linha[23], erp.data_abertura);
+  linha[24] = pickFirstNonEmpty(linha[24], erp.segmento);
+  linha[25] = pickFirstNonEmpty(linha[25], erp.vendedor, erp.responsavel);
+  linha[26] = pickFirstNonEmpty(linha[26], erp.complexidade);
+  linha[27] = pickFirstNonEmpty(linha[27], erp.uf);
+  linha[28] = pickFirstNonEmpty(linha[28], erp.etapa);
+  linha[30] = pickFirstNonEmpty(linha[30], erp.data_frustrada);
+  linha[31] = pickFirstNonEmpty(linha[31], erp.data_enviada);
+  linha[32] = pickFirstNonEmpty(linha[32], getDataFaturamentoERP(erp));
+
+  if (getStatusPriority(statusProposta) > getStatusPriority(linha[22])) {
+    linha[22] = statusProposta;
+  }
 }
 
 const motorBackend = {
@@ -106,9 +188,9 @@ const motorBackend = {
       ];
 
       // Dicionário (memória) para consolidar obras
-      const obrasProcessadas = {};
+      const obrasAgrupadas = {};
 
-      // 3. Varre os dados do JSON e traduz para a matriz do painel
+      // 3. Varre os dados do JSON e agrupa por obra
       if (erpData && erpData.length > 0) {
         erpData.forEach(erp => {
           const numObra = String(erp.obra || '').trim();
@@ -119,108 +201,79 @@ const motorBackend = {
           if (!matchNum) return;
 
           const numObraLimpo = matchNum[0];
-          const valorERP = erp.p_total !== null ? erp.p_total : "0";
-          const valorAtual = parseMoneyFlexible(valorERP);
-          const nfNormalizada = normalizeNF(erp.nf);
-          const chaveContabilizacao = nfNormalizada
-            ? `NF:${nfNormalizada}`
-            : `SEMNF:${buildRegistroSemNFKey(erp)}`;
 
-          // Lógica automática para definir o STATUS DA PROPOSTA
-          let statusProposta = "ENVIADAS";
-          const etapaUp = String(erp.etapa || '').toUpperCase();
-
-          if (erp.data_frustrada) {
-            statusProposta = "FRUSTRADAS";
-          } else if (etapaUp.includes('CONCLU') || erp.data_faturam || erp.data_faturamento) {
-            statusProposta = "CONCLUIDAS";
-          } else if (etapaUp.includes('ENTREGUE')) {
-            statusProposta = "ENTREGUES";
-          } else if (erp.data_firmada) {
-            statusProposta = "FIRMADAS";
+          if (!obrasAgrupadas[numObraLimpo]) {
+            obrasAgrupadas[numObraLimpo] = [];
           }
 
-          if (!obrasProcessadas[numObraLimpo]) {
-            obrasProcessadas[numObraLimpo] = {
-              linha: [
-                erp.data_firmada || "", // 0: DATA FIRMADA
-                numObraLimpo, // 1: OBRA LIMPA
-                erp.cliente || "", // 2: CLIENTE
-                "", // 3: VALOR (consolidado ao final)
-                erp.praz || erp.pz || "", // 4: DIAS_PRAZO
-
-                // 5 a 16: Itens de controle em branco
-                "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A",
-
-                "", // 17: OBSERVAÇÕES
-                "{}", // 18: DETALHES JSON
-                erp.cpmv || 0, // 19: CPMV
-                erp.item || "", // 20: ITEM
-                erp.categoria || "", // 21: CATEGORIA
-
-                // 22 a 32: INFORMAÇÕES EXTRAS
-                statusProposta, // 22: STATUS GERAL DA PROPOSTA
-                erp.data_abertura || "", // 23: ABERTURA
-                erp.segmento || "", // 24: SEGMENTO
-                erp.vendedor || erp.responsavel || "", // 25: RESPONSAVEL
-                erp.complexidade || "", // 26: COMPLEXIDADE
-                erp.uf || "", // 27: UF
-                erp.etapa || "", // 28: ETAPA
-                erp.nf || "", // 29: NF
-                erp.data_frustrada || "", // 30: FRUSTRADA
-                erp.data_enviada || "", // 31: ENVIADA
-                erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
-              ],
-              valorTotal: 0,
-              chavesContabilizadas: new Set(),
-              itens: new Set(),
-              categorias: new Set(),
-              nfs: new Set(),
-              observacoes: new Set()
-            };
-          } else {
-            const blocoExistente = obrasProcessadas[numObraLimpo];
-
-            // Só preenche campos-base se estiverem vazios, preservando o comportamento atual ao máximo
-            blocoExistente.linha[0] = pickFirstNonEmpty(blocoExistente.linha[0], erp.data_firmada);
-            blocoExistente.linha[2] = pickFirstNonEmpty(blocoExistente.linha[2], erp.cliente);
-            blocoExistente.linha[4] = pickFirstNonEmpty(blocoExistente.linha[4], erp.praz, erp.pz);
-            blocoExistente.linha[19] = pickFirstNonEmpty(blocoExistente.linha[19], erp.cpmv || 0);
-            blocoExistente.linha[22] = pickFirstNonEmpty(blocoExistente.linha[22], statusProposta);
-            blocoExistente.linha[23] = pickFirstNonEmpty(blocoExistente.linha[23], erp.data_abertura);
-            blocoExistente.linha[24] = pickFirstNonEmpty(blocoExistente.linha[24], erp.segmento);
-            blocoExistente.linha[25] = pickFirstNonEmpty(blocoExistente.linha[25], erp.vendedor, erp.responsavel);
-            blocoExistente.linha[26] = pickFirstNonEmpty(blocoExistente.linha[26], erp.complexidade);
-            blocoExistente.linha[27] = pickFirstNonEmpty(blocoExistente.linha[27], erp.uf);
-            blocoExistente.linha[28] = pickFirstNonEmpty(blocoExistente.linha[28], erp.etapa);
-            blocoExistente.linha[30] = pickFirstNonEmpty(blocoExistente.linha[30], erp.data_frustrada);
-            blocoExistente.linha[31] = pickFirstNonEmpty(blocoExistente.linha[31], erp.data_enviada);
-            blocoExistente.linha[32] = pickFirstNonEmpty(blocoExistente.linha[32], erp.data_faturam, erp.data_faturamento);
-          }
-
-          const bloco = obrasProcessadas[numObraLimpo];
-
-          if (!bloco.chavesContabilizadas.has(chaveContabilizacao)) {
-            bloco.valorTotal += valorAtual;
-            bloco.chavesContabilizadas.add(chaveContabilizacao);
-          }
-
-          addUnique(bloco.itens, erp.item);
-          addUnique(bloco.categorias, erp.categoria);
-          addUnique(bloco.nfs, erp.nf);
-          addUnique(bloco.observacoes, erp.observacoes);
-          addUnique(bloco.observacoes, erp.observacao);
-          addUnique(bloco.observacoes, erp.obs);
-          addUnique(bloco.observacoes, erp.analise);
+          obrasAgrupadas[numObraLimpo].push(erp);
         });
 
-        // Consolidação final antes do retorno
-        const listaObras = Object.values(obrasProcessadas).map(bloco => {
+        const listaObras = Object.entries(obrasAgrupadas).map(([numObraLimpo, linhasObra]) => {
+          const linhasFinanceirasValidas = linhasObra.filter(isLinhaFinanceiramenteValida);
+          const linhasNaoCanceladas = linhasObra.filter(erp => !isLinhaCancelada(erp));
+
+          let linhasSelecionadas = [];
+          let contabilizarPorNF = false;
+
+          if (linhasFinanceirasValidas.length > 0) {
+            linhasSelecionadas = linhasFinanceirasValidas;
+            contabilizarPorNF = true;
+          } else if (linhasNaoCanceladas.length > 0) {
+            linhasSelecionadas = linhasNaoCanceladas;
+          } else {
+            linhasSelecionadas = linhasObra;
+          }
+
+          const primeiraLinha = linhasSelecionadas[0] || linhasObra[0];
+          const statusInicial = getStatusProposta(primeiraLinha);
+
+          const bloco = {
+            linha: criarLinhaBase(numObraLimpo, primeiraLinha, statusInicial),
+            valorTotal: 0,
+            itens: new Set(),
+            categorias: new Set(),
+            nfs: new Set(),
+            observacoes: new Set(),
+            chavesContabilizadas: new Set()
+          };
+
+          linhasSelecionadas.forEach(erp => {
+            const statusProposta = getStatusProposta(erp);
+            const valorAtual = parseMoneyFlexible(erp.p_total !== null ? erp.p_total : "0");
+            const nfNormalizada = normalizeNF(erp.nf);
+
+            let chaveContabilizacao = null;
+            if (contabilizarPorNF && nfNormalizada) {
+              chaveContabilizacao = `NF:${nfNormalizada}`;
+            }
+
+            if (chaveContabilizacao) {
+              if (!bloco.chavesContabilizadas.has(chaveContabilizacao)) {
+                bloco.valorTotal += valorAtual;
+                bloco.chavesContabilizadas.add(chaveContabilizacao);
+              }
+            } else {
+              bloco.valorTotal += valorAtual;
+            }
+
+            mergeLinhaBase(bloco.linha, erp, statusProposta);
+
+            addUnique(bloco.itens, erp.item);
+            addUnique(bloco.categorias, erp.categoria);
+            addUnique(bloco.nfs, erp.nf);
+            addUnique(bloco.observacoes, erp.observacoes);
+            addUnique(bloco.observacoes, erp.observacao);
+            addUnique(bloco.observacoes, erp.obs);
+            addUnique(bloco.observacoes, erp.analise);
+          });
+
           bloco.linha[3] = bloco.valorTotal;
           bloco.linha[17] = buildObservacoesConsolidadas(bloco);
           bloco.linha[20] = Array.from(bloco.itens).join(" / ");
           bloco.linha[21] = Array.from(bloco.categorias).join(" / ");
           bloco.linha[29] = Array.from(bloco.nfs).join(" / ");
+
           return bloco.linha;
         });
 
@@ -246,11 +299,11 @@ const motorBackend = {
   },
 
   getResumoGeralObra: async function(numObra) {
-    return { encontrado: false }; 
+    return { encontrado: false };
   },
 
   getDadosGeralSimplificado: async function(numObra) {
-    return null; 
+    return null;
   },
 
   excluirObra: async function(numObra) {
