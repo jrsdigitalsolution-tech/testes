@@ -39,6 +39,27 @@ function addUnique(setRef, value) {
   if (txt) setRef.add(txt);
 }
 
+function normalizeNFKey(value) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[^A-Z0-9./_-]/g, '');
+}
+
+function buildLinhaSemNFKey(erp, valorERP) {
+  return [
+    String(erp.item || '').trim().toUpperCase(),
+    String(erp.categoria || '').trim().toUpperCase(),
+    String(erp.cliente || '').trim().toUpperCase(),
+    String(erp.data_firmada || '').trim(),
+    String(erp.data_abertura || '').trim(),
+    String(erp.data_enviada || '').trim(),
+    String(erp.data_faturam || erp.data_faturamento || '').trim(),
+    String(valorERP || '').trim()
+  ].join('|');
+}
+
 function pickFirstNonEmpty(...values) {
   for (const value of values) {
     if (value === 0) return value;
@@ -146,15 +167,15 @@ const motorBackend = {
                 erp.data_enviada || "", // 31: ENVIADA
                 erp.data_faturam || erp.data_faturamento || "" // 32: FATURAMENTO
               ],
-              valorTotal: parseMoneyFlexible(valorERP),
+              valorTotal: 0,
               itens: new Set(),
               categorias: new Set(),
               nfs: new Set(),
-              observacoes: new Set()
+              observacoes: new Set(),
+              documentosContabilizados: new Set()
             };
           } else {
             const blocoExistente = obrasProcessadas[numObraLimpo];
-            blocoExistente.valorTotal += parseMoneyFlexible(valorERP);
 
             // Só preenche campos-base se estiverem vazios, preservando o comportamento atual ao máximo
             blocoExistente.linha[0] = pickFirstNonEmpty(blocoExistente.linha[0], erp.data_firmada);
@@ -174,6 +195,13 @@ const motorBackend = {
           }
 
           const bloco = obrasProcessadas[numObraLimpo];
+          const nfNormalizada = normalizeNFKey(erp.nf);
+          const chaveContabilizacao = nfNormalizada ? `NF:${nfNormalizada}` : `SEMNF:${buildLinhaSemNFKey(erp, valorERP)}`;
+
+          if (!bloco.documentosContabilizados.has(chaveContabilizacao)) {
+            bloco.valorTotal += parseMoneyFlexible(valorERP);
+            bloco.documentosContabilizados.add(chaveContabilizacao);
+          }
 
           addUnique(bloco.itens, erp.item);
           addUnique(bloco.categorias, erp.categoria);
