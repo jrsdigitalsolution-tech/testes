@@ -131,6 +131,102 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return mesLinha >= range.inicio && mesLinha <= range.fim;
   }
 
+  function obterMetaConcluidasNF(row) {
+    const detalhes = safeJsonParse(row[COLS.DETALHES_JSON], {});
+    const lista = Array.isArray(detalhes.meta_concluidas_nf) ? detalhes.meta_concluidas_nf : [];
+
+    return lista.map(doc => {
+      const dataOriginal = String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim();
+      const data = parseDataUniversal(dataOriginal);
+      if (!data) return null;
+
+      const ano = String(data.getFullYear());
+      const mes = String(data.getMonth() + 1).padStart(2, '0');
+
+      return {
+        nf: String((doc && doc.nf) || '').trim(),
+        valor: parseMoneyFlexible(doc && doc.valor),
+        item: String((doc && doc.item) || '').trim(),
+        categoria: String((doc && doc.categoria) || '').trim(),
+        dataFaturamentoOriginal: dataOriginal,
+        dataFaturamentoTimestamp: data.getTime(),
+        mesReferencia: `${ano}-${mes}`
+      };
+    }).filter(Boolean);
+  }
+
+  function expandirLinhasConcluidasPorMes(dados) {
+    if (currentStatusFilter !== 'CONCLUIDAS') return dados.slice();
+
+    return dados.flatMap(item => {
+      const row = Array.isArray(item.content) ? item.content : [];
+      const docs = obterMetaConcluidasNF(row);
+
+      if (docs.length <= 1) return [item];
+
+      const grupos = new Map();
+
+      docs.forEach(doc => {
+        if (!grupos.has(doc.mesReferencia)) {
+          grupos.set(doc.mesReferencia, {
+            mesReferencia: doc.mesReferencia,
+            valorTotal: 0,
+            itens: new Set(),
+            categorias: new Set(),
+            nfs: new Set(),
+            detalhesDocs: [],
+            ultimoTimestamp: doc.dataFaturamentoTimestamp,
+            ultimaDataOriginal: doc.dataFaturamentoOriginal
+          });
+        }
+
+        const grupo = grupos.get(doc.mesReferencia);
+        grupo.valorTotal += parseMoneyFlexible(doc.valor);
+        if (doc.item) grupo.itens.add(doc.item);
+        if (doc.categoria) grupo.categorias.add(doc.categoria);
+        if (doc.nf) grupo.nfs.add(doc.nf);
+        grupo.detalhesDocs.push({
+          nf: doc.nf,
+          valor: doc.valor,
+          item: doc.item,
+          categoria: doc.categoria,
+          data_faturamento_original: doc.dataFaturamentoOriginal,
+          data_faturamento: doc.dataFaturamentoOriginal
+        });
+
+        if (doc.dataFaturamentoTimestamp > grupo.ultimoTimestamp) {
+          grupo.ultimoTimestamp = doc.dataFaturamentoTimestamp;
+          grupo.ultimaDataOriginal = doc.dataFaturamentoOriginal;
+        }
+      });
+
+      if (grupos.size <= 1) return [item];
+
+      const detalhesBase = safeJsonParse(row[COLS.DETALHES_JSON], {});
+      const gruposOrdenados = Array.from(grupos.values()).sort((a, b) => a.ultimoTimestamp - b.ultimoTimestamp);
+
+      return gruposOrdenados.map(grupo => {
+        const rowClone = row.slice();
+        rowClone[COLS.VALOR] = grupo.valorTotal;
+        rowClone[COLS.DATA_FATURAMENTO] = grupo.ultimaDataOriginal || rowClone[COLS.DATA_FATURAMENTO];
+        rowClone[COLS.ITEM_GERAL] = Array.from(grupo.itens).join(" / ") || rowClone[COLS.ITEM_GERAL];
+        rowClone[COLS.CATEGORIA_GERAL] = Array.from(grupo.categorias).join(" / ") || rowClone[COLS.CATEGORIA_GERAL];
+        rowClone[COLS.NF] = Array.from(grupo.nfs).join(" / ") || rowClone[COLS.NF];
+
+        const detalhesGrupo = Object.assign({}, detalhesBase, {
+          meta_concluidas_nf: grupo.detalhesDocs
+        });
+        rowClone[COLS.DETALHES_JSON] = JSON.stringify(detalhesGrupo);
+
+        return {
+          content: rowClone,
+          originalIndex: item.originalIndex,
+          renderKey: `${item.originalIndex}:${grupo.mesReferencia}`
+        };
+      });
+    });
+  }
+
   function setFilter(status) {
     currentStatusFilter = status;
     document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -392,6 +488,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   let dadosLocais = [];
+  let linhasRenderizadasAtuais = [];
   let estadoOrdenacao = { key: "", dir: "asc" };
   const mapaOrdenacaoCabecalho = {
     "OBRA": "obra",
@@ -593,8 +690,27 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     }
   }
 
+  function abrirLinhaRenderizada(idxRender) {
+    const registro = linhasRenderizadasAtuais[idxRender];
+    if (!registro || !Array.isArray(registro.content)) return;
+
+    const r = registro.content;
+    const status = String(r[COLS.STATUS_PROPOSTA] || '').trim();
+
+    if (status === 'FIRMADAS' && Number.isInteger(registro.originalIndex) && dadosLocais[registro.originalIndex]) {
+      editar(registro.originalIndex);
+      return;
+    }
+
+    abrirResumoPropostaConteudo(r);
+  }
+
   function abrirResumoProposta(idx) {
-    const r = dadosLocais[idx].content;
+    if (!dadosLocais[idx] || !Array.isArray(dadosLocais[idx].content)) return;
+    abrirResumoPropostaConteudo(dadosLocais[idx].content);
+  }
+
+  function abrirResumoPropostaConteudo(r) {
     const obra = r[COLS.OBRA] || "";
     const status = r[COLS.STATUS_PROPOSTA] || "-";
     const valor = parseMoneyFlexible(r[COLS.VALOR]);
@@ -664,13 +780,18 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     atualizarVisibilidadeFiltroConcluidas();
     sincronizarFiltroConcluidasNaInterface();
 
-    const dados = dadosOriginais.filter(d => {
+    const dadosFiltradosStatus = dadosOriginais.filter(d => {
       if (currentStatusFilter === 'TODAS') return true;
-      if (d.content[COLS.STATUS_PROPOSTA] !== currentStatusFilter) return false;
-      return linhaConcluidaDentroDoPeriodo(d.content);
+      return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
     });
 
+    const dadosPreparados = currentStatusFilter === 'CONCLUIDAS'
+      ? expandirLinhasConcluidasPorMes(dadosFiltradosStatus)
+      : dadosFiltradosStatus.slice();
+
+    const dados = dadosPreparados.filter(d => linhaConcluidaDentroDoPeriodo(d.content));
     const dadosOrdenados = ordenarDados(dados);
+    linhasRenderizadasAtuais = dadosOrdenados.slice();
     const isGeralView = currentStatusFilter !== 'FIRMADAS';
     
     let html = "";
@@ -691,7 +812,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           : `<th><span class="table-head-label">${l}</span></th>`;
       }).join('') + "</tr>";
 
-      dadosOrdenados.forEach(dO => {
+      dadosOrdenados.forEach((dO, renderIdx) => {
         const r = Array.isArray(dO.content) ? dO.content : [];
         const val = parseMoneyFlexible(r[COLS.VALOR]);
         const res = calcularPorcentagem(r);
@@ -705,7 +826,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         const detalhesJson = safeJsonParse(r[COLS.DETALHES_JSON], {});
 
         // LINHA DESKTOP - FIRMADAS
-        html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+        html += `<tr onclick="abrirLinhaRenderizada(${renderIdx})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
@@ -756,7 +877,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         // CARTÃO MOBILE - FIRMADAS
         htmlMobile += `
-        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+        <div class="mc-card animate-fade-up" onclick="abrirLinhaRenderizada(${renderIdx})">
             <div class="mc-header">
                 <div class="mc-obra-wrap">
                     <i class="bi bi-folder2-open"></i>
@@ -801,7 +922,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           : `<th><span class="table-head-label">${l}</span></th>`;
       }).join('') + "</tr>";
 
-      dadosOrdenados.forEach(dO => {
+      dadosOrdenados.forEach((dO, renderIdx) => {
         const r = Array.isArray(dO.content) ? dO.content : [];
         const val = parseMoneyFlexible(r[COLS.VALOR]);
         totVal += val;
@@ -819,7 +940,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         else statusBadgeClass += "bg-light text-secondary";
 
         // LINHA DESKTOP - GERAL
-        html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
+        html += `<tr onclick="abrirLinhaRenderizada(${renderIdx})">`;
         html += `<td>${formatDateDisplayBR(r[indicePrimeiraDataGeral]) || '-'}</td>`;
         html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
@@ -845,7 +966,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         let itemDisplay = words.length > 3 ? words.slice(0, 3).join(" ") + "..." : (itemStr || "-");
 
         htmlMobile += `
-        <div class="mc-card animate-fade-up" onclick="lidarCliqueLinha(${dO.originalIndex})">
+        <div class="mc-card animate-fade-up" onclick="abrirLinhaRenderizada(${renderIdx})">
             <div class="mc-header">
                 <div class="mc-obra-wrap">
                     <i class="bi bi-folder2-open"></i>
@@ -878,6 +999,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     }
 
     if (dados.length === 0) {
+      linhasRenderizadasAtuais = [];
       body.innerHTML = `<tr><td colspan="20" class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 2rem;"></i>Nenhum registro encontrado nesta visualização.</td></tr>`;
       if(mobileContainer) mobileContainer.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-folder2-open d-block mb-2" style="font-size: 3rem; opacity: 0.5;"></i><p>Nenhuma obra nesta visão.</p></div>`;
     } else {
