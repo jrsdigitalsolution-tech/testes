@@ -155,6 +155,35 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     }).filter(Boolean);
   }
 
+  function obterMetaConcluidasPorMes(row) {
+    const detalhes = safeJsonParse(row[COLS.DETALHES_JSON], {});
+    const lista = Array.isArray(detalhes.meta_concluidas_por_mes) ? detalhes.meta_concluidas_por_mes : [];
+
+    return lista.map(grupo => {
+      const dataOriginal = String((grupo && (grupo.data_faturamento_original || grupo.data_faturamento)) || '').trim();
+      const data = parseDataUniversal(dataOriginal);
+      const detalhesNFs = Array.isArray(grupo && grupo.detalhes_nfs) ? grupo.detalhes_nfs : [];
+
+      return {
+        mesReferencia: String((grupo && grupo.mes_referencia) || '').trim(),
+        valorTotal: parseMoneyFlexible(grupo && grupo.valor_total),
+        item: String((grupo && grupo.item) || '').trim(),
+        categoria: String((grupo && grupo.categoria) || '').trim(),
+        nf: String((grupo && grupo.nf) || '').trim(),
+        dataFaturamentoOriginal: dataOriginal,
+        dataFaturamentoTimestamp: data ? data.getTime() : 0,
+        detalhesDocs: detalhesNFs.map(doc => ({
+          nf: String((doc && doc.nf) || '').trim(),
+          valor: parseMoneyFlexible(doc && doc.valor),
+          item: String((doc && doc.item) || '').trim(),
+          categoria: String((doc && doc.categoria) || '').trim(),
+          data_faturamento_original: String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim(),
+          data_faturamento: String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim()
+        }))
+      };
+    }).filter(grupo => grupo.mesReferencia && grupo.valorTotal > 0);
+  }
+
   function agruparMetaConcluidasNFPorMes(docs) {
     const grupos = new Map();
 
@@ -211,8 +240,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
     return dados.flatMap(item => {
       const row = Array.isArray(item.content) ? item.content : [];
-      const docsNF = obterMetaConcluidasNF(row);
-      const gruposMensais = agruparMetaConcluidasNFPorMes(docsNF);
+      const docsValidos = obterMetaConcluidasNF(row);
+      const gruposMensais = docsValidos.length > 0
+        ? agruparMetaConcluidasNFPorMes(docsValidos)
+        : obterMetaConcluidasPorMes(row);
 
       if (gruposMensais.length === 0) return [item];
 
@@ -221,9 +252,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         const rowClone = row.slice();
         rowClone[COLS.VALOR] = grupo.valorTotal;
         rowClone[COLS.DATA_FATURAMENTO] = grupo.dataFaturamentoOriginal || rowClone[COLS.DATA_FATURAMENTO];
-        rowClone[COLS.ITEM_GERAL] = grupo.item || "";
-        rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || "";
-        rowClone[COLS.NF] = grupo.nf || "";
+        rowClone[COLS.ITEM_GERAL] = grupo.item || rowClone[COLS.ITEM_GERAL];
+        rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || rowClone[COLS.CATEGORIA_GERAL];
+        rowClone[COLS.NF] = grupo.nf || rowClone[COLS.NF];
 
         const detalhesGrupo = Object.assign({}, detalhesBase, {
           meta_concluidas_nf: grupo.detalhesDocs,
