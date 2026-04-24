@@ -124,6 +124,47 @@ function isLinhaFinanceiramenteValida(erp) {
   return temNF && temFaturamento;
 }
 
+
+function parseDataUniversal(value) {
+  if (!value) return null;
+  if (value instanceof Date) return new Date(value.getTime());
+  if (typeof value !== 'string') return null;
+
+  const txt = value.trim();
+  if (!txt) return null;
+
+  let m = txt.match(/^(\d{2})\/(\d{2})\/(\d{2,4})$/);
+  if (m) {
+    const ano = Number(m[3].length === 2 ? `20${m[3]}` : m[3]);
+    return new Date(ano, Number(m[2]) - 1, Number(m[1]), 0, 0, 0);
+  }
+
+  m = txt.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 0, 0, 0);
+  }
+
+  const dt = new Date(txt);
+  if (!Number.isNaN(dt.getTime())) {
+    dt.setHours(12, 0, 0, 0);
+    return dt;
+  }
+
+  return null;
+}
+
+function atualizarMaiorDataFaturamento(bloco, erp) {
+  const valorOriginal = pickFirstNonEmpty(erp.data_faturam, erp.data_faturamento);
+  const dataNormalizada = parseDataUniversal(String(valorOriginal || '').trim());
+  if (!dataNormalizada) return;
+
+  const timestamp = dataNormalizada.getTime();
+  if (bloco.maiorDataFaturamentoTs === null || timestamp > bloco.maiorDataFaturamentoTs) {
+    bloco.maiorDataFaturamentoTs = timestamp;
+    bloco.maiorDataFaturamentoOriginal = valorOriginal;
+  }
+}
+
 function criarLinhaBase(item) {
   return [
     item.data_firmada || "", // 0: DATA FIRMADA
@@ -173,7 +214,9 @@ function consolidarGrupoObra(grupo) {
     categorias: new Set(),
     nfs: new Set(),
     observacoes: new Set(),
-    chavesValorContabilizadas: new Set()
+    chavesValorContabilizadas: new Set(),
+    maiorDataFaturamentoTs: null,
+    maiorDataFaturamentoOriginal: ""
   };
 
   linhasSelecionadas.forEach(item => {
@@ -201,7 +244,7 @@ function consolidarGrupoObra(grupo) {
     bloco.linha[29] = pickFirstNonEmpty(bloco.linha[29], erp.nf);
     bloco.linha[30] = pickFirstNonEmpty(bloco.linha[30], erp.data_frustrada);
     bloco.linha[31] = pickFirstNonEmpty(bloco.linha[31], erp.data_enviada);
-    bloco.linha[32] = pickFirstNonEmpty(bloco.linha[32], erp.data_faturam, erp.data_faturamento);
+    atualizarMaiorDataFaturamento(bloco, erp);
 
     addUnique(bloco.itens, erp.item);
     addUnique(bloco.categorias, erp.categoria);
@@ -217,6 +260,7 @@ function consolidarGrupoObra(grupo) {
   bloco.linha[20] = Array.from(bloco.itens).join(" / ");
   bloco.linha[21] = Array.from(bloco.categorias).join(" / ");
   bloco.linha[29] = Array.from(bloco.nfs).join(" / ");
+  bloco.linha[32] = bloco.maiorDataFaturamentoOriginal || bloco.linha[32];
 
   return bloco.linha;
 }
