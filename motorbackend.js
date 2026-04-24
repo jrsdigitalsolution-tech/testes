@@ -66,24 +66,20 @@ function pickFirstMonetarySourceFlexible(erp, fields) {
 }
 
 function getValorFinanceiroNF(erp) {
-  const camposNF = [
+  const camposNFConfiaveis = [
     'vrnota',
     'vr_nota',
     'vr_nota_fiscal',
-    'valor_nota',
     'valor_nf',
-    'vrnf',
+    'valor_nota',
     'valor_nota_fiscal',
-    'vrnota_nf',
-    'valor_da_nf',
-    'vlr_nota',
-    'vlrnf',
+    'vrnf',
     'vlr_nf',
-    'vr_nota',
-    'vrnota_total'
+    'vlr_nota',
+    'vlr_nota_fiscal'
   ];
 
-  return pickFirstMonetarySourceFlexible(erp, camposNF);
+  return pickFirstMonetarySourceFlexible(erp, camposNFConfiaveis);
 }
 
 function getValorFinanceiroObra(erp) {
