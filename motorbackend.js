@@ -44,6 +44,47 @@ function parseMoneyFlexible(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function pickFirstMonetarySource(erp, fields) {
+  for (const field of fields) {
+    if (!Object.prototype.hasOwnProperty.call(erp || {}, field)) continue;
+    const raw = erp[field];
+    if (raw === null || raw === undefined || raw === '') continue;
+    const valor = parseMoneyFlexible(raw);
+    if (Number.isFinite(valor) && valor > 0) {
+      return valor;
+    }
+  }
+  return null;
+}
+
+function getValorFinanceiroDocumento(erp) {
+  const camposPreferenciaisNF = [
+    'vrnota',
+    'vr_nota',
+    'vr_nota_fiscal',
+    'valor_nota',
+    'valor_nf',
+    'vrnf',
+    'valor_nota_fiscal',
+    'vrnota_nf'
+  ];
+
+  const valorNF = pickFirstMonetarySource(erp, camposPreferenciaisNF);
+  if (valorNF !== null) return valorNF;
+
+  const camposFallback = [
+    'p_total',
+    'valor_total',
+    'valor',
+    'total',
+    'valoritens',
+    'valor_itens'
+  ];
+
+  const valorFallback = pickFirstMonetarySource(erp, camposFallback);
+  return valorFallback !== null ? valorFallback : 0;
+}
+
 function addUnique(setRef, value) {
   const txt = String(value || '').trim();
   if (txt) setRef.add(txt);
@@ -417,7 +458,7 @@ const motorBackend = {
           const obraInfo = extractObraPermitida(erp.obra);
           if (!obraInfo) return;
 
-          const valorERP = erp.p_total !== null ? erp.p_total : "0";
+          const valorERP = getValorFinanceiroDocumento(erp);
 
           // Lógica automática para definir o STATUS DA PROPOSTA
           let statusProposta = "ENVIADAS";
