@@ -165,6 +165,40 @@ function atualizarMaiorDataFaturamento(bloco, erp) {
   }
 }
 
+function formatDateToISO(value) {
+  const data = parseDataUniversal(String(value || '').trim());
+  if (!data) return "";
+  const ano = String(data.getFullYear());
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function getMonthKeyFromValue(value) {
+  const data = parseDataUniversal(String(value || '').trim());
+  if (!data) return "";
+  const ano = String(data.getFullYear());
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${ano}-${mes}`;
+}
+
+function serializarDetalhesConcluidas(bloco) {
+  const detalhes = Array.from(bloco.documentosConcluidos.values()).map(doc => ({
+    chave: doc.chave,
+    nf: doc.nf,
+    data_faturamento: doc.dataFaturamentoIso,
+    data_faturamento_original: doc.dataFaturamentoOriginal,
+    mes_referencia: doc.mesReferencia,
+    valor: doc.valor,
+    item: Array.from(doc.itens).join(" / "),
+    categoria: Array.from(doc.categorias).join(" / ")
+  }));
+
+  return JSON.stringify({
+    meta_concluidas_nf: detalhes
+  });
+}
+
 function criarLinhaBase(item) {
   return [
     item.data_firmada || "", // 0: DATA FIRMADA
@@ -216,7 +250,8 @@ function consolidarGrupoObra(grupo) {
     observacoes: new Set(),
     chavesValorContabilizadas: new Set(),
     maiorDataFaturamentoTs: null,
-    maiorDataFaturamentoOriginal: ""
+    maiorDataFaturamentoOriginal: "",
+    documentosConcluidos: new Map()
   };
 
   linhasSelecionadas.forEach(item => {
@@ -246,6 +281,38 @@ function consolidarGrupoObra(grupo) {
     bloco.linha[31] = pickFirstNonEmpty(bloco.linha[31], erp.data_enviada);
     atualizarMaiorDataFaturamento(bloco, erp);
 
+    const dataFaturamentoOriginal = pickFirstNonEmpty(erp.data_faturam, erp.data_faturamento);
+    const dataFaturamentoIso = formatDateToISO(dataFaturamentoOriginal);
+    const mesReferencia = getMonthKeyFromValue(dataFaturamentoOriginal);
+
+    if (nfNormalizada && dataFaturamentoIso) {
+      if (!bloco.documentosConcluidos.has(chaveValor)) {
+        bloco.documentosConcluidos.set(chaveValor, {
+          chave: chaveValor,
+          nf: String(erp.nf || '').trim(),
+          dataFaturamentoIso,
+          dataFaturamentoOriginal,
+          mesReferencia,
+          valor: parseMoneyFlexible(item.valorERP),
+          itens: new Set(),
+          categorias: new Set()
+        });
+      }
+
+      const detalheDoc = bloco.documentosConcluidos.get(chaveValor);
+      detalheDoc.valor = Math.max(detalheDoc.valor, parseMoneyFlexible(item.valorERP));
+      addUnique(detalheDoc.itens, erp.item);
+      addUnique(detalheDoc.categorias, erp.categoria);
+
+      const dataAtualDoc = parseDataUniversal(detalheDoc.dataFaturamentoOriginal);
+      const dataNovaDoc = parseDataUniversal(dataFaturamentoOriginal);
+      if (dataNovaDoc && (!dataAtualDoc || dataNovaDoc.getTime() > dataAtualDoc.getTime())) {
+        detalheDoc.dataFaturamentoIso = dataFaturamentoIso;
+        detalheDoc.dataFaturamentoOriginal = dataFaturamentoOriginal;
+        detalheDoc.mesReferencia = mesReferencia;
+      }
+    }
+
     addUnique(bloco.itens, erp.item);
     addUnique(bloco.categorias, erp.categoria);
     addUnique(bloco.nfs, erp.nf);
@@ -257,6 +324,7 @@ function consolidarGrupoObra(grupo) {
 
   bloco.linha[3] = bloco.valorTotal;
   bloco.linha[17] = buildObservacoesConsolidadas(bloco);
+  bloco.linha[18] = serializarDetalhesConcluidas(bloco);
   bloco.linha[20] = Array.from(bloco.itens).join(" / ");
   bloco.linha[21] = Array.from(bloco.categorias).join(" / ");
   bloco.linha[29] = Array.from(bloco.nfs).join(" / ");
