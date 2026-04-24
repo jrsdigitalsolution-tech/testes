@@ -241,10 +241,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     return dados.flatMap(item => {
       const row = Array.isArray(item.content) ? item.content : [];
       const docsValidos = obterMetaConcluidasNF(row);
-      const gruposMensais = docsValidos.length > 0
-        ? agruparMetaConcluidasNFPorMes(docsValidos)
-        : obterMetaConcluidasPorMes(row);
+      if (docsValidos.length === 0) return [item];
 
+      const gruposMensais = agruparMetaConcluidasNFPorMes(docsValidos);
       if (gruposMensais.length === 0) return [item];
 
       const detalhesBase = safeJsonParse(row[COLS.DETALHES_JSON], {});
@@ -252,9 +251,9 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         const rowClone = row.slice();
         rowClone[COLS.VALOR] = grupo.valorTotal;
         rowClone[COLS.DATA_FATURAMENTO] = grupo.dataFaturamentoOriginal || rowClone[COLS.DATA_FATURAMENTO];
-        rowClone[COLS.ITEM_GERAL] = grupo.item || rowClone[COLS.ITEM_GERAL];
-        rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || rowClone[COLS.CATEGORIA_GERAL];
-        rowClone[COLS.NF] = grupo.nf || rowClone[COLS.NF];
+        rowClone[COLS.ITEM_GERAL] = grupo.item || "-";
+        rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || "-";
+        rowClone[COLS.NF] = grupo.nf || "";
 
         const detalhesGrupo = Object.assign({}, detalhesBase, {
           meta_concluidas_nf: grupo.detalhesDocs,
