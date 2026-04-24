@@ -194,8 +194,65 @@ function serializarDetalhesConcluidas(bloco) {
     categoria: Array.from(doc.categorias).join(" / ")
   }));
 
+  const gruposMes = new Map();
+
+  detalhes.forEach(doc => {
+    const chaveMes = String(doc.mes_referencia || '').trim();
+    if (!chaveMes) return;
+
+    if (!gruposMes.has(chaveMes)) {
+      gruposMes.set(chaveMes, {
+        mes_referencia: chaveMes,
+        valor_total: 0,
+        nfs: new Set(),
+        itens: new Set(),
+        categorias: new Set(),
+        data_faturamento_original: doc.data_faturamento_original || doc.data_faturamento || '',
+        data_faturamento: doc.data_faturamento || '',
+        ultimoTimestamp: parseDataUniversal(String(doc.data_faturamento_original || doc.data_faturamento || '').trim())?.getTime() || 0,
+        detalhes_nfs: []
+      });
+    }
+
+    const grupo = gruposMes.get(chaveMes);
+    grupo.valor_total += parseMoneyFlexible(doc.valor);
+    addUnique(grupo.nfs, doc.nf);
+    addUnique(grupo.itens, doc.item);
+    addUnique(grupo.categorias, doc.categoria);
+    grupo.detalhes_nfs.push({
+      nf: doc.nf,
+      valor: parseMoneyFlexible(doc.valor),
+      item: doc.item,
+      categoria: doc.categoria,
+      data_faturamento_original: doc.data_faturamento_original || doc.data_faturamento || '',
+      data_faturamento: doc.data_faturamento || ''
+    });
+
+    const dataAtual = parseDataUniversal(String(doc.data_faturamento_original || doc.data_faturamento || '').trim());
+    const timestampAtual = dataAtual ? dataAtual.getTime() : 0;
+    if (timestampAtual > grupo.ultimoTimestamp) {
+      grupo.ultimoTimestamp = timestampAtual;
+      grupo.data_faturamento_original = doc.data_faturamento_original || doc.data_faturamento || '';
+      grupo.data_faturamento = doc.data_faturamento || '';
+    }
+  });
+
+  const detalhesPorMes = Array.from(gruposMes.values())
+    .sort((a, b) => a.ultimoTimestamp - b.ultimoTimestamp)
+    .map(grupo => ({
+      mes_referencia: grupo.mes_referencia,
+      valor_total: grupo.valor_total,
+      nf: Array.from(grupo.nfs).join(" / "),
+      item: Array.from(grupo.itens).join(" / "),
+      categoria: Array.from(grupo.categorias).join(" / "),
+      data_faturamento_original: grupo.data_faturamento_original,
+      data_faturamento: grupo.data_faturamento,
+      detalhes_nfs: grupo.detalhes_nfs
+    }));
+
   return JSON.stringify({
-    meta_concluidas_nf: detalhes
+    meta_concluidas_nf: detalhes,
+    meta_concluidas_por_mes: detalhesPorMes
   });
 }
 
