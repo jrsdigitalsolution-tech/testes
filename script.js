@@ -162,7 +162,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       const row = Array.isArray(item.content) ? item.content : [];
       const docs = obterMetaConcluidasNF(row);
 
-      if (docs.length <= 1) return [item];
+      if (docs.length === 0) return [item];
 
       const grupos = new Map();
 
@@ -199,8 +199,6 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
           grupo.ultimaDataOriginal = doc.dataFaturamentoOriginal;
         }
       });
-
-      if (grupos.size <= 1) return [item];
 
       const detalhesBase = safeJsonParse(row[COLS.DETALHES_JSON], {});
       const gruposOrdenados = Array.from(grupos.values()).sort((a, b) => a.ultimoTimestamp - b.ultimoTimestamp);
