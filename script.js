@@ -155,64 +155,119 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     }).filter(Boolean);
   }
 
+  function obterMetaConcluidasPorMes(row) {
+    const detalhes = safeJsonParse(row[COLS.DETALHES_JSON], {});
+    const lista = Array.isArray(detalhes.meta_concluidas_por_mes) ? detalhes.meta_concluidas_por_mes : [];
+
+    return lista.map(grupo => {
+      const dataOriginal = String((grupo && (grupo.data_faturamento_original || grupo.data_faturamento)) || '').trim();
+      const data = parseDataUniversal(dataOriginal);
+      const detalhesNFs = Array.isArray(grupo && grupo.detalhes_nfs) ? grupo.detalhes_nfs : [];
+
+      return {
+        mesReferencia: String((grupo && grupo.mes_referencia) || '').trim(),
+        valorTotal: parseMoneyFlexible(grupo && grupo.valor_total),
+        item: String((grupo && grupo.item) || '').trim(),
+        categoria: String((grupo && grupo.categoria) || '').trim(),
+        nf: String((grupo && grupo.nf) || '').trim(),
+        dataFaturamentoOriginal: dataOriginal,
+        dataFaturamentoTimestamp: data ? data.getTime() : 0,
+        detalhesDocs: detalhesNFs.map(doc => ({
+          nf: String((doc && doc.nf) || '').trim(),
+          valor: parseMoneyFlexible(doc && doc.valor),
+          item: String((doc && doc.item) || '').trim(),
+          categoria: String((doc && doc.categoria) || '').trim(),
+          data_faturamento_original: String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim(),
+          data_faturamento: String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim()
+        }))
+      };
+    }).filter(grupo => grupo.mesReferencia && grupo.valorTotal > 0);
+  }
+
+  function agruparMetaConcluidasNFPorMes(docs) {
+    const grupos = new Map();
+
+    docs.forEach(doc => {
+      if (!grupos.has(doc.mesReferencia)) {
+        grupos.set(doc.mesReferencia, {
+          mesReferencia: doc.mesReferencia,
+          valorTotal: 0,
+          itens: new Set(),
+          categorias: new Set(),
+          nfs: new Set(),
+          detalhesDocs: [],
+          ultimoTimestamp: doc.dataFaturamentoTimestamp,
+          ultimaDataOriginal: doc.dataFaturamentoOriginal
+        });
+      }
+
+      const grupo = grupos.get(doc.mesReferencia);
+      grupo.valorTotal += parseMoneyFlexible(doc.valor);
+      if (doc.item) grupo.itens.add(doc.item);
+      if (doc.categoria) grupo.categorias.add(doc.categoria);
+      if (doc.nf) grupo.nfs.add(doc.nf);
+      grupo.detalhesDocs.push({
+        nf: doc.nf,
+        valor: parseMoneyFlexible(doc.valor),
+        item: doc.item,
+        categoria: doc.categoria,
+        data_faturamento_original: doc.dataFaturamentoOriginal,
+        data_faturamento: doc.dataFaturamentoOriginal
+      });
+
+      if (doc.dataFaturamentoTimestamp > grupo.ultimoTimestamp) {
+        grupo.ultimoTimestamp = doc.dataFaturamentoTimestamp;
+        grupo.ultimaDataOriginal = doc.dataFaturamentoOriginal;
+      }
+    });
+
+    return Array.from(grupos.values())
+      .sort((a, b) => a.ultimoTimestamp - b.ultimoTimestamp)
+      .map(grupo => ({
+        mesReferencia: grupo.mesReferencia,
+        valorTotal: grupo.valorTotal,
+        item: Array.from(grupo.itens).join(" / "),
+        categoria: Array.from(grupo.categorias).join(" / "),
+        nf: Array.from(grupo.nfs).join(" / "),
+        dataFaturamentoOriginal: grupo.ultimaDataOriginal,
+        dataFaturamentoTimestamp: grupo.ultimoTimestamp,
+        detalhesDocs: grupo.detalhesDocs
+      }));
+  }
+
   function expandirLinhasConcluidasPorMes(dados) {
     if (currentStatusFilter !== 'CONCLUIDAS') return dados.slice();
 
     return dados.flatMap(item => {
       const row = Array.isArray(item.content) ? item.content : [];
-      const docs = obterMetaConcluidasNF(row);
+      const gruposMensaisDoBackend = obterMetaConcluidasPorMes(row);
+      const gruposMensais = gruposMensaisDoBackend.length > 0
+        ? gruposMensaisDoBackend
+        : agruparMetaConcluidasNFPorMes(obterMetaConcluidasNF(row));
 
-      if (docs.length === 0) return [item];
-
-      const grupos = new Map();
-
-      docs.forEach(doc => {
-        if (!grupos.has(doc.mesReferencia)) {
-          grupos.set(doc.mesReferencia, {
-            mesReferencia: doc.mesReferencia,
-            valorTotal: 0,
-            itens: new Set(),
-            categorias: new Set(),
-            nfs: new Set(),
-            detalhesDocs: [],
-            ultimoTimestamp: doc.dataFaturamentoTimestamp,
-            ultimaDataOriginal: doc.dataFaturamentoOriginal
-          });
-        }
-
-        const grupo = grupos.get(doc.mesReferencia);
-        grupo.valorTotal += parseMoneyFlexible(doc.valor);
-        if (doc.item) grupo.itens.add(doc.item);
-        if (doc.categoria) grupo.categorias.add(doc.categoria);
-        if (doc.nf) grupo.nfs.add(doc.nf);
-        grupo.detalhesDocs.push({
-          nf: doc.nf,
-          valor: doc.valor,
-          item: doc.item,
-          categoria: doc.categoria,
-          data_faturamento_original: doc.dataFaturamentoOriginal,
-          data_faturamento: doc.dataFaturamentoOriginal
-        });
-
-        if (doc.dataFaturamentoTimestamp > grupo.ultimoTimestamp) {
-          grupo.ultimoTimestamp = doc.dataFaturamentoTimestamp;
-          grupo.ultimaDataOriginal = doc.dataFaturamentoOriginal;
-        }
-      });
+      if (gruposMensais.length === 0) return [item];
 
       const detalhesBase = safeJsonParse(row[COLS.DETALHES_JSON], {});
-      const gruposOrdenados = Array.from(grupos.values()).sort((a, b) => a.ultimoTimestamp - b.ultimoTimestamp);
-
-      return gruposOrdenados.map(grupo => {
+      return gruposMensais.map(grupo => {
         const rowClone = row.slice();
         rowClone[COLS.VALOR] = grupo.valorTotal;
-        rowClone[COLS.DATA_FATURAMENTO] = grupo.ultimaDataOriginal || rowClone[COLS.DATA_FATURAMENTO];
-        rowClone[COLS.ITEM_GERAL] = Array.from(grupo.itens).join(" / ") || rowClone[COLS.ITEM_GERAL];
-        rowClone[COLS.CATEGORIA_GERAL] = Array.from(grupo.categorias).join(" / ") || rowClone[COLS.CATEGORIA_GERAL];
-        rowClone[COLS.NF] = Array.from(grupo.nfs).join(" / ") || rowClone[COLS.NF];
+        rowClone[COLS.DATA_FATURAMENTO] = grupo.dataFaturamentoOriginal || rowClone[COLS.DATA_FATURAMENTO];
+        rowClone[COLS.ITEM_GERAL] = grupo.item || rowClone[COLS.ITEM_GERAL];
+        rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || rowClone[COLS.CATEGORIA_GERAL];
+        rowClone[COLS.NF] = grupo.nf || rowClone[COLS.NF];
 
         const detalhesGrupo = Object.assign({}, detalhesBase, {
-          meta_concluidas_nf: grupo.detalhesDocs
+          meta_concluidas_nf: grupo.detalhesDocs,
+          meta_concluidas_por_mes: [{
+            mes_referencia: grupo.mesReferencia,
+            valor_total: grupo.valorTotal,
+            nf: grupo.nf || "",
+            item: grupo.item || "",
+            categoria: grupo.categoria || "",
+            data_faturamento_original: grupo.dataFaturamentoOriginal || "",
+            data_faturamento: grupo.dataFaturamentoOriginal || "",
+            detalhes_nfs: grupo.detalhesDocs
+          }]
         });
         rowClone[COLS.DETALHES_JSON] = JSON.stringify(detalhesGrupo);
 
@@ -225,7 +280,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     });
   }
 
-  function setFilter(status) {
+
+function setFilter(status) {
     currentStatusFilter = status;
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.classList.remove('active');
