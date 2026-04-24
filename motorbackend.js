@@ -76,10 +76,11 @@ function getValorFinanceiroNF(erp) {
     'valor_nota_fiscal',
     'vrnota_nf',
     'valor_da_nf',
-    'valor_documento',
-    'valor_doc',
-    'vrdocumento',
-    'vlr_nota'
+    'vlr_nota',
+    'vlrnf',
+    'vlr_nf',
+    'vr_nota',
+    'vrnota_total'
   ];
 
   return pickFirstMonetarySourceFlexible(erp, camposNF);
