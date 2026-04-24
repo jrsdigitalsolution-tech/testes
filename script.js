@@ -134,25 +134,36 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function obterMetaConcluidasNF(row) {
     const detalhes = safeJsonParse(row[COLS.DETALHES_JSON], {});
     const lista = Array.isArray(detalhes.meta_concluidas_nf) ? detalhes.meta_concluidas_nf : [];
+    const docs = [];
+    const chaves = new Set();
 
-    return lista.map(doc => {
+    lista.forEach(doc => {
       const dataOriginal = String((doc && (doc.data_faturamento_original || doc.data_faturamento)) || '').trim();
       const data = parseDataUniversal(dataOriginal);
-      if (!data) return null;
+      const valor = parseMoneyFlexible(doc && doc.valor);
+      const nf = String((doc && doc.nf) || '').trim();
+
+      if (!data || valor <= 0) return;
 
       const ano = String(data.getFullYear());
       const mes = String(data.getMonth() + 1).padStart(2, '0');
+      const chaveDoc = `${nf}|${ano}-${mes}|${valor}`;
 
-      return {
-        nf: String((doc && doc.nf) || '').trim(),
-        valor: parseMoneyFlexible(doc && doc.valor),
+      if (chaves.has(chaveDoc)) return;
+      chaves.add(chaveDoc);
+
+      docs.push({
+        nf,
+        valor,
         item: String((doc && doc.item) || '').trim(),
         categoria: String((doc && doc.categoria) || '').trim(),
         dataFaturamentoOriginal: dataOriginal,
         dataFaturamentoTimestamp: data.getTime(),
         mesReferencia: `${ano}-${mes}`
-      };
-    }).filter(Boolean);
+      });
+    });
+
+    return docs;
   }
 
   function obterMetaConcluidasPorMes(row) {
@@ -249,17 +260,19 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       const detalhesBase = safeJsonParse(row[COLS.DETALHES_JSON], {});
       return gruposMensais.map(grupo => {
         const rowClone = row.slice();
-        rowClone[COLS.VALOR] = grupo.valorTotal;
-        rowClone[COLS.DATA_FATURAMENTO] = grupo.dataFaturamentoOriginal || rowClone[COLS.DATA_FATURAMENTO];
+
+        rowClone[COLS.VALOR] = parseMoneyFlexible(grupo.valorTotal);
+        rowClone[COLS.DATA_FATURAMENTO] = grupo.dataFaturamentoOriginal || "";
         rowClone[COLS.ITEM_GERAL] = grupo.item || "-";
         rowClone[COLS.CATEGORIA_GERAL] = grupo.categoria || "-";
         rowClone[COLS.NF] = grupo.nf || "";
+        rowClone[COLS.OBS] = rowClone[COLS.OBS] || "";
 
         const detalhesGrupo = Object.assign({}, detalhesBase, {
           meta_concluidas_nf: grupo.detalhesDocs,
           meta_concluidas_por_mes: [{
             mes_referencia: grupo.mesReferencia,
-            valor_total: grupo.valorTotal,
+            valor_total: parseMoneyFlexible(grupo.valorTotal),
             nf: grupo.nf || "",
             item: grupo.item || "",
             categoria: grupo.categoria || "",
