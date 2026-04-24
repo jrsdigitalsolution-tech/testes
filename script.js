@@ -403,6 +403,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     "STATUS DE COMPRAS": "compras",
     "FATUR.": "fatur",
     "ABERTURA": "abertura",
+    "FATURAMENTO": "abertura",
     "STATUS": "status",
     "RESPONSÁVEL": "responsavel",
     "COMPLEX.": "complexidade",
@@ -562,7 +563,11 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
       } 
       else if (chave === 'compras') { valorA = calcularStatusComprasVirtual(rA).valor; valorB = calcularStatusComprasVirtual(rB).valor; } 
       else if (chave === 'fatur') { valorA = parseStatusDateValue(rA[COLS.ITEM_FIM]) ?? -1; valorB = parseStatusDateValue(rB[COLS.ITEM_FIM]) ?? -1; }
-      else if (chave === 'abertura') { valorA = parseStatusDateValue(rA[COLS.DATA_ABERTURA]) ?? -1; valorB = parseStatusDateValue(rB[COLS.DATA_ABERTURA]) ?? -1; }
+      else if (chave === 'abertura') {
+        const indiceDataBase = currentStatusFilter === 'CONCLUIDAS' ? COLS.DATA_FATURAMENTO : COLS.DATA_ABERTURA;
+        valorA = parseStatusDateValue(rA[indiceDataBase]) ?? -1;
+        valorB = parseStatusDateValue(rB[indiceDataBase]) ?? -1;
+      }
       else if (chave === 'status') { valorA = String(rA[COLS.STATUS_PROPOSTA] || '').trim(); valorB = String(rB[COLS.STATUS_PROPOSTA] || '').trim(); }
       else if (chave === 'responsavel') { valorA = String(rA[COLS.RESPONSAVEL] || '').trim(); valorB = String(rB[COLS.RESPONSAVEL] || '').trim(); }
       else if (chave === 'complexidade') { valorA = String(rA[COLS.COMPLEXIDADE] || '').trim(); valorB = String(rB[COLS.COMPLEXIDADE] || '').trim(); }
@@ -782,7 +787,10 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     } else {
       // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
-      const labs = ["ABERTURA", "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
+      const isConcluida = currentStatusFilter === 'CONCLUIDAS';
+      const labelPrimeiraColunaGeral = isConcluida ? "FATURAMENTO" : "ABERTURA";
+      const indicePrimeiraDataGeral = isConcluida ? COLS.DATA_FATURAMENTO : COLS.DATA_ABERTURA;
+      const labs = [labelPrimeiraColunaGeral, "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
 
       head.innerHTML = "<tr>" + labs.map(l => {
@@ -812,7 +820,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
 
         // LINHA DESKTOP - GERAL
         html += `<tr onclick="lidarCliqueLinha(${dO.originalIndex})">`;
-        html += `<td>${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</td>`;
+        html += `<td>${formatDateDisplayBR(r[indicePrimeiraDataGeral]) || '-'}</td>`;
         html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
@@ -851,8 +859,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
                 
                 <div class="mc-kpi-grid mt-2">
                     <div class="mc-kpi">
-                        <span class="mc-kpi-lbl">Abertura</span>
-                        <span class="mc-kpi-val">${formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || '-'}</span>
+                        <span class="mc-kpi-lbl">${isConcluida ? "Faturamento" : "Abertura"}</span>
+                        <span class="mc-kpi-val">${formatDateDisplayBR(r[indicePrimeiraDataGeral]) || '-'}</span>
                     </div>
                     <div class="mc-kpi">
                         <span class="mc-kpi-lbl">Valor (${pctOrcado})</span>
