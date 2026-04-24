@@ -44,21 +44,29 @@ function parseMoneyFlexible(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function pickFirstMonetarySource(erp, fields) {
+function pickFirstMonetarySourceFlexible(erp, fields) {
+  const source = erp && typeof erp === 'object' ? erp : {};
+  const keysLower = Object.keys(source).reduce((acc, key) => {
+    acc[key.toLowerCase()] = key;
+    return acc;
+  }, {});
+
   for (const field of fields) {
-    if (!Object.prototype.hasOwnProperty.call(erp || {}, field)) continue;
-    const raw = erp[field];
+    const realKey = keysLower[String(field || '').toLowerCase()];
+    if (!realKey) continue;
+    const raw = source[realKey];
     if (raw === null || raw === undefined || raw === '') continue;
     const valor = parseMoneyFlexible(raw);
     if (Number.isFinite(valor) && valor > 0) {
       return valor;
     }
   }
+
   return null;
 }
 
-function getValorFinanceiroDocumento(erp) {
-  const camposPreferenciaisNF = [
+function getValorFinanceiroNF(erp) {
+  const camposNF = [
     'vrnota',
     'vr_nota',
     'vr_nota_fiscal',
@@ -66,10 +74,19 @@ function getValorFinanceiroDocumento(erp) {
     'valor_nf',
     'vrnf',
     'valor_nota_fiscal',
-    'vrnota_nf'
+    'vrnota_nf',
+    'valor_da_nf',
+    'valor_documento',
+    'valor_doc',
+    'vrdocumento',
+    'vlr_nota'
   ];
 
-  const valorNF = pickFirstMonetarySource(erp, camposPreferenciaisNF);
+  return pickFirstMonetarySourceFlexible(erp, camposNF);
+}
+
+function getValorFinanceiroObra(erp) {
+  const valorNF = getValorFinanceiroNF(erp);
   if (valorNF !== null) return valorNF;
 
   const camposFallback = [
@@ -81,7 +98,7 @@ function getValorFinanceiroDocumento(erp) {
     'valor_itens'
   ];
 
-  const valorFallback = pickFirstMonetarySource(erp, camposFallback);
+  const valorFallback = pickFirstMonetarySourceFlexible(erp, camposFallback);
   return valorFallback !== null ? valorFallback : 0;
 }
 
@@ -302,7 +319,7 @@ function criarLinhaBase(item) {
     item.data_firmada || "", // 0: DATA FIRMADA
     item.obraExibicao || "", // 1: OBRA LIMPA/EXIBIÇÃO
     item.erp.cliente || "", // 2: CLIENTE
-    item.valorERP || "", // 3: VALOR
+    item.valorObra || "", // 3: VALOR
     item.erp.praz || item.erp.pz || "", // 4: DIAS_PRAZO
 
     // 5 a 16: Itens de controle em branco
@@ -359,7 +376,7 @@ function consolidarGrupoObra(grupo) {
 
     if (!bloco.chavesValorContabilizadas.has(chaveValor)) {
       bloco.chavesValorContabilizadas.add(chaveValor);
-      bloco.valorTotal += parseMoneyFlexible(item.valorERP);
+      bloco.valorTotal += parseMoneyFlexible(item.valorContabil);
     }
 
     bloco.linha[0] = pickFirstNonEmpty(bloco.linha[0], erp.data_firmada);
@@ -383,7 +400,7 @@ function consolidarGrupoObra(grupo) {
     const dataFaturamentoIso = formatDateToISO(dataFaturamentoOriginal);
     const mesReferencia = getMonthKeyFromValue(dataFaturamentoOriginal);
 
-    if (nfNormalizada && dataFaturamentoIso) {
+    if (nfNormalizada && dataFaturamentoIso && parseMoneyFlexible(item.valorNF || 0) > 0) {
       if (!bloco.documentosConcluidos.has(chaveValor)) {
         bloco.documentosConcluidos.set(chaveValor, {
           chave: chaveValor,
@@ -391,14 +408,14 @@ function consolidarGrupoObra(grupo) {
           dataFaturamentoIso,
           dataFaturamentoOriginal,
           mesReferencia,
-          valor: parseMoneyFlexible(item.valorERP),
+          valor: parseMoneyFlexible(item.valorNF || 0),
           itens: new Set(),
           categorias: new Set()
         });
       }
 
       const detalheDoc = bloco.documentosConcluidos.get(chaveValor);
-      detalheDoc.valor = Math.max(detalheDoc.valor, parseMoneyFlexible(item.valorERP));
+      detalheDoc.valor = Math.max(detalheDoc.valor, parseMoneyFlexible(item.valorNF || 0));
       addUnique(detalheDoc.itens, erp.item);
       addUnique(detalheDoc.categorias, erp.categoria);
 
@@ -458,7 +475,11 @@ const motorBackend = {
           const obraInfo = extractObraPermitida(erp.obra);
           if (!obraInfo) return;
 
-          const valorERP = getValorFinanceiroDocumento(erp);
+          const valorObra = getValorFinanceiroObra(erp);
+          const valorNF = getValorFinanceiroNF(erp);
+          const valorContabil = isLinhaFinanceiramenteValida(erp) && valorNF !== null
+            ? valorNF
+            : valorObra;
 
           // Lógica automática para definir o STATUS DA PROPOSTA
           let statusProposta = "ENVIADAS";
@@ -482,7 +503,9 @@ const motorBackend = {
 
           obrasProcessadas[obraInfo.obraKey].itens.push({
             erp,
-            valorERP,
+            valorObra,
+            valorNF,
+            valorContabil,
             statusProposta,
             obraExibicao: obraInfo.obraExibicao,
             sourceIndex
