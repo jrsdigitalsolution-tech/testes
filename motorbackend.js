@@ -179,6 +179,30 @@ function isLinhaFinanceiramenteValida(erp) {
   return temNF && temFaturamento;
 }
 
+function getPrioridadeConsolidacaoLinha(item) {
+  const erp = item && item.erp ? item.erp : {};
+  const etapaUp = String(erp.etapa || '').toUpperCase();
+  const statusUp = String((item && item.statusProposta) || '').toUpperCase();
+
+  if (isLinhaFinanceiramenteValida(erp)) return 100;
+  if (isLinhaCanceladaOuFrustrada(erp)) return 10;
+  if (erp.data_firmada || statusUp === "FIRMADAS") return 80;
+  if (etapaUp.includes('ENTREGUE') || statusUp === "ENTREGUES") return 70;
+  if (erp.data_enviada || statusUp === "ENVIADAS") return 60;
+  return 40;
+}
+
+function selecionarLinhasParaConsolidacao(grupo) {
+  const itens = Array.isArray(grupo && grupo.itens) ? grupo.itens : [];
+  if (!itens.length) return [];
+
+  const maiorPrioridade = itens.reduce((maior, item) => {
+    return Math.max(maior, getPrioridadeConsolidacaoLinha(item));
+  }, 0);
+
+  return itens.filter(item => getPrioridadeConsolidacaoLinha(item) === maiorPrioridade);
+}
+
 
 function parseDataUniversal(value) {
   if (!value) return null;
@@ -344,11 +368,7 @@ function criarLinhaBase(item) {
 }
 
 function consolidarGrupoObra(grupo) {
-  const linhasFinanceiramenteValidas = grupo.itens.filter(item => isLinhaFinanceiramenteValida(item.erp));
-  const linhasNaoCanceladas = grupo.itens.filter(item => !isLinhaCanceladaOuFrustrada(item.erp));
-  const linhasSelecionadas = linhasFinanceiramenteValidas.length > 0
-    ? linhasFinanceiramenteValidas
-    : (linhasNaoCanceladas.length > 0 ? linhasNaoCanceladas : grupo.itens);
+  const linhasSelecionadas = selecionarLinhasParaConsolidacao(grupo);
 
   const itemBase = linhasSelecionadas[0] || grupo.itens[0];
   const linha = criarLinhaBase(itemBase);
