@@ -25,6 +25,72 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
     { valor: 12, label: 'Dezembro' }
   ];
 
+  function isStatusEntregue(status) {
+    const statusNormalizado = String(status || '').trim().toUpperCase();
+    return statusNormalizado === 'ENTREGUE' || statusNormalizado === 'ENTREGUES' || statusNormalizado === 'CONCLUIDAS';
+  }
+
+  function isFiltroEntregueAtual() {
+    return isStatusEntregue(currentStatusFilter);
+  }
+
+  function statusLinhaCorrespondeFiltro(statusLinha) {
+    if (currentStatusFilter === 'TODAS') return true;
+    if (isFiltroEntregueAtual()) return isStatusEntregue(statusLinha);
+    return String(statusLinha || '').trim().toUpperCase() === String(currentStatusFilter || '').trim().toUpperCase();
+  }
+
+  function getStatusDisplay(status) {
+    return isStatusEntregue(status) ? 'ENTREGUE' : String(status || '').trim();
+  }
+
+  function normalizarObraResumoKey(value) {
+    const txt = String(value || '').trim();
+    if (!txt) return "";
+
+    const candidatos = [];
+    const add = raw => {
+      const digits = String(raw || '').replace(/\D/g, '');
+      if (digits.length >= 5) candidatos.push(digits.slice(0, 5));
+    };
+
+    let match;
+    const padraoSeparador = /(?:^|[^\d])(?:OBRA\s*)?(\d{2})\s*[.,\-\/]\s*(\d{2,3})(?=$|[^\d])/gi;
+    while ((match = padraoSeparador.exec(txt)) !== null) {
+      add(`${match[1]}${String(match[2] || '').padStart(3, '0')}`);
+    }
+
+    const padraoEspaco = /(?:^|[^\d])(?:OBRA\s*)?(\d{2})\s+(\d{2,3})(?=$|[^\d])/gi;
+    while ((match = padraoEspaco.exec(txt)) !== null) {
+      add(`${match[1]}${String(match[2] || '').padStart(3, '0')}`);
+    }
+
+    const padraoCinco = /(?:^|[^\d])(?:OBRA\s*)?(\d{5})(?=$|[^\d])/gi;
+    while ((match = padraoCinco.exec(txt)) !== null) {
+      add(match[1]);
+    }
+
+    return candidatos[0] || txt.toUpperCase();
+  }
+
+  function getObraResumoKey(row) {
+    const r = Array.isArray(row) ? row : [];
+    const detalhes = safeJsonParse(r[COLS.DETALHES_JSON], {});
+    return String(detalhes.meta_obra_key || '').trim() || normalizarObraResumoKey(r[COLS.OBRA]);
+  }
+
+  function contarObrasReais(dados) {
+    const chaves = new Set();
+
+    (Array.isArray(dados) ? dados : []).forEach(item => {
+      const row = Array.isArray(item && item.content) ? item.content : [];
+      const chave = getObraResumoKey(row);
+      if (chave) chaves.add(chave);
+    });
+
+    return chaves.size;
+  }
+
   function mudarAno(ano) {
     const anoEfetivo = '26';
     const houveTentativaDeTroca = Boolean(ano) && String(ano) !== anoEfetivo;
@@ -85,12 +151,20 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   function atualizarVisibilidadeFiltroConcluidas() {
     const row = document.getElementById('filtroConcluidasFaturamento');
     if (!row) return;
-    row.classList.toggle('d-none', currentStatusFilter !== 'CONCLUIDAS');
+    row.classList.toggle('d-none', !isFiltroEntregueAtual());
   }
 
-  function aplicarFiltroConcluidasPorMes() {
+  function aplicarFiltroConcluidasPorMes(origem) {
     currentFaturamentoMesInicio = normalizarMesFiltroConcluidas(document.getElementById('faturamentoMesInicio')?.value);
     currentFaturamentoMesFim = normalizarMesFiltroConcluidas(document.getElementById('faturamentoMesFim')?.value);
+
+    if (origem === 'inicio' && currentFaturamentoMesInicio !== 'TODOS' && currentFaturamentoMesFim === 'TODOS') {
+      currentFaturamentoMesFim = currentFaturamentoMesInicio;
+    }
+
+    if (origem === 'fim' && currentFaturamentoMesFim !== 'TODOS' && currentFaturamentoMesInicio === 'TODOS') {
+      currentFaturamentoMesInicio = currentFaturamentoMesFim;
+    }
 
     if (currentFaturamentoMesInicio !== 'TODOS' && currentFaturamentoMesFim !== 'TODOS') {
       const inicioNum = parseInt(currentFaturamentoMesInicio, 10);
@@ -116,7 +190,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function linhaConcluidaDentroDoPeriodo(row) {
-    if (currentStatusFilter !== 'CONCLUIDAS') return true;
+    if (!isFiltroEntregueAtual()) return true;
 
     const semFiltro = currentFaturamentoMesInicio === 'TODOS' && currentFaturamentoMesFim === 'TODOS';
     if (semFiltro) return true;
@@ -247,7 +321,7 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function expandirLinhasConcluidasPorMes(dados) {
-    if (currentStatusFilter !== 'CONCLUIDAS') return dados.slice();
+    if (!isFiltroEntregueAtual()) return dados.slice();
 
     return dados.flatMap(item => {
       const row = Array.isArray(item.content) ? item.content : [];
@@ -297,13 +371,14 @@ function setFilter(status) {
     currentStatusFilter = status;
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.classList.remove('active');
-      if (btn.getAttribute('data-status') === status) {
+      const btnStatus = btn.getAttribute('data-status');
+      if (btnStatus === status || (isStatusEntregue(btnStatus) && isStatusEntregue(status))) {
         btn.classList.add('active');
       }
     });
     const selectEl = document.getElementById('statusFilter');
     if (selectEl && selectEl.value !== status) {
-      selectEl.value = status;
+      selectEl.value = isStatusEntregue(status) ? 'ENTREGUE' : status;
     }
     atualizarVisibilidadeFiltroConcluidas();
     sincronizarFiltroConcluidasNaInterface();
@@ -456,6 +531,17 @@ function setFilter(status) {
     const mes = String(dt.getMonth() + 1).padStart(2, '0');
     const ano = String(dt.getFullYear()).slice(-2);
     return `${dia}/${mes}/${ano}`;
+  }
+
+  function formatPrazoDisplay(value) {
+    const raw = String(value ?? "").trim();
+    if (!raw) return "-";
+
+    if (value instanceof Date || isStatusDate(raw) || /^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+      return formatDateDisplayBR(raw) || raw;
+    }
+
+    return raw;
   }
 
   function sanitizeInteger(value) {
@@ -727,7 +813,7 @@ function setFilter(status) {
       else if (chave === 'compras') { valorA = calcularStatusComprasVirtual(rA).valor; valorB = calcularStatusComprasVirtual(rB).valor; } 
       else if (chave === 'fatur') { valorA = parseStatusDateValue(rA[COLS.ITEM_FIM]) ?? -1; valorB = parseStatusDateValue(rB[COLS.ITEM_FIM]) ?? -1; }
       else if (chave === 'abertura') {
-        const indiceDataBase = currentStatusFilter === 'CONCLUIDAS' ? COLS.DATA_FATURAMENTO : COLS.DATA_ABERTURA;
+        const indiceDataBase = isFiltroEntregueAtual() ? COLS.DATA_FATURAMENTO : COLS.DATA_ABERTURA;
         valorA = parseStatusDateValue(rA[indiceDataBase]) ?? -1;
         valorB = parseStatusDateValue(rB[indiceDataBase]) ?? -1;
       }
@@ -777,59 +863,142 @@ function setFilter(status) {
   }
 
   function abrirResumoPropostaConteudo(r) {
-    const obra = r[COLS.OBRA] || "";
-    const status = r[COLS.STATUS_PROPOSTA] || "-";
+    const obra = String(r[COLS.OBRA] || "").trim();
+    const status = String(r[COLS.STATUS_PROPOSTA] || "-").trim() || "-";
     const valor = parseMoneyFlexible(r[COLS.VALOR]);
-    
-    const infoPrincipal = [
-      { icon: "bi-folder2-open", label: "Obra", valor: obra },
-      { icon: "bi-building", label: "Cliente", valor: r[COLS.CLIENTE] || "-" },
-      { icon: "bi-box-seam", label: "Item", valor: r[COLS.ITEM_GERAL] || "-" },
-      { icon: "bi-tags", label: "Categoria", valor: r[COLS.CATEGORIA_GERAL] || "-" },
-      { icon: "bi-person", label: "Responsável", valor: r[COLS.RESPONSAVEL] || "-" },
-      { icon: "bi-bar-chart", label: "Complexidade", valor: r[COLS.COMPLEXIDADE] || "-" }
-    ];
+    const cliente = String(r[COLS.CLIENTE] || "-").trim() || "-";
+    const item = String(r[COLS.ITEM_GERAL] || "-").trim() || "-";
+    const categoria = String(r[COLS.CATEGORIA_GERAL] || "-").trim() || "-";
+    const responsavel = String(r[COLS.RESPONSAVEL] || "-").trim() || "-";
+    const complexidade = String(r[COLS.COMPLEXIDADE] || "-").trim() || "-";
+    const uf = String(r[COLS.UF] || "").trim();
+    const etapa = String(r[COLS.ETAPA] || "-").trim() || "-";
+    const nf = String(r[COLS.NF] || "-").trim() || "-";
+    const observacoes = String(r[COLS.OBS] || "").trim();
 
-    const infoComplementar = [
-      { icon: "bi-calendar-event", label: "Data Abertura", valor: formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || "-" },
-      { icon: "bi-geo-alt", label: "UF", valor: r[COLS.UF] || "-" },
-      { icon: "bi-diagram-3", label: "Etapa", valor: r[COLS.ETAPA] || "-" }
-    ];
+    const mapaUF = {
+      AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal",
+      ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais",
+      PA: "Pará", PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte",
+      RS: "Rio Grande do Sul", RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo", SE: "Sergipe", TO: "Tocantins"
+    };
+
+    const ufNormalizada = uf.toUpperCase();
+    const localizacao = ufNormalizada
+      ? (mapaUF[ufNormalizada] ? `${mapaUF[ufNormalizada]} (${ufNormalizada})` : ufNormalizada)
+      : "UF não informada";
+
+    const statusConfig = {
+      ENVIADAS: { chip: "is-info", label: "ENVIADA", icon: "bi-send-check" },
+      FRUSTRADAS: { chip: "is-danger", label: "FRUSTRADA", icon: "bi-x-octagon" },
+      ENTREGUE: { chip: "is-success", label: "ENTREGUE", icon: "bi-check-circle" },
+      CONCLUIDAS: { chip: "is-success", label: "ENTREGUE", icon: "bi-check-circle" },
+      ENTREGUES: { chip: "is-success", label: "ENTREGUE", icon: "bi-truck" },
+      FIRMADAS: { chip: "is-primary", label: "FIRMADA", icon: "bi-award" }
+    };
+
+    const statusMeta = statusConfig[isStatusEntregue(status) ? 'ENTREGUE' : status] || { chip: "is-neutral", label: status || "NÃO INFORMADO", icon: "bi-info-circle" };
+
+    const dataAbertura = formatDateDisplayBR(r[COLS.DATA_ABERTURA]) || "-";
+    let dataSecundariaLabel = "Atualização";
+    let dataSecundariaValor = "-";
 
     if (status === 'ENVIADAS') {
-       infoComplementar.push({ icon: "bi-send", label: "Data Enviada", valor: formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || "-" });
+      dataSecundariaLabel = 'Envio';
+      dataSecundariaValor = formatDateDisplayBR(r[COLS.DATA_ENVIADA]) || '-';
     } else if (status === 'FRUSTRADAS') {
-       infoComplementar.push({ icon: "bi-calendar-x", label: "Data Frustrada", valor: formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || "-" });
-    } else if (status === 'CONCLUIDAS' || status === 'ENTREGUES') {
-       infoComplementar.push({ icon: "bi-calendar-check", label: "Data Faturamento", valor: formatDateDisplayBR(r[COLS.DATA_FATURAMENTO]) || "-" });
-       infoComplementar.push({ icon: "bi-receipt", label: "NF", valor: r[COLS.NF] || "-" });
+      dataSecundariaLabel = 'Frustração';
+      dataSecundariaValor = formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-';
+    } else if (isStatusEntregue(status)) {
+      dataSecundariaLabel = 'Faturamento';
+      dataSecundariaValor = formatDateDisplayBR(r[COLS.DATA_FATURAMENTO]) || '-';
     }
 
-    const montarCards = (arr) => arr.map(d => `<div class="geral-card"><div class="geral-card-label"><i class="bi ${d.icon} me-1"></i>${d.label}</div><div class="geral-card-value">${d.valor}</div></div>`).join('');
+    const registros = [];
+    if (nf && nf !== '-') registros.push(`<p><strong>NF(s) emitidas:</strong> ${escapeHtml(nf)}</p>`);
+    if (item && item !== '-') registros.push(`<p><strong>Itens atrelados no ERP:</strong> ${escapeHtml(item)}</p>`);
+    if (etapa && etapa !== '-') registros.push(`<p><strong>Etapa registrada:</strong> ${escapeHtml(etapa)}</p>`);
+    if (observacoes) registros.push(`<p><strong>Observações:</strong> ${escapeHtml(observacoes)}</p>`);
+    if (!registros.length) {
+      registros.push(`<p><strong>Registros:</strong> Não há observações adicionais retornadas pelo ERP para esta obra.</p>`);
+    }
 
     const html = `
-      <div class="resumo-modal-scroll">
-        <div class="geral-shell">
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados da Proposta (${status})</h6>
-            <div class="geral-grid">
-              ${montarCards(infoPrincipal)}
+      <div class="proposta-consulta-page">
+        <section class="proposta-consulta-hero">
+          <article class="proposta-hero-card proposta-hero-card-main">
+            <span class="proposta-obra-badge">OBRA #${escapeHtml(obra || '-')}</span>
+            <h2>${escapeHtml(cliente)}</h2>
+            <div class="proposta-hero-location"><i class="bi bi-geo-alt"></i><span>${escapeHtml(localizacao)}</span></div>
+            <div class="proposta-chip-row">
+              <span class="proposta-chip ${statusMeta.chip}"><i class="bi ${statusMeta.icon}"></i>${escapeHtml(statusMeta.label)}</span>
+              <span class="proposta-chip"><i class="bi bi-tag"></i>${escapeHtml(categoria)}</span>
             </div>
-          </section>
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-info-circle"></i> Situação e Datas</h6>
-            <div class="geral-grid">
-              ${montarCards(infoComplementar)}
+          </article>
+        </section>
+
+        <section class="proposta-consulta-value-row">
+          <article class="proposta-hero-card proposta-hero-card-value">
+            <span>VALOR DA PROPOSTA</span>
+            <strong>R$ ${formatMoneyBR(valor)}</strong>
+          </article>
+        </section>
+
+        <section class="proposta-consulta-grid">
+          <article class="proposta-panel">
+            <header class="proposta-panel-head">
+              <div class="proposta-panel-title"><i class="bi bi-box-seam"></i><span>DETALHES DO EQUIPAMENTO</span></div>
+            </header>
+            <div class="proposta-panel-body proposta-panel-body-stack">
+              <div class="proposta-field-block">
+                <span>DESCRIÇÃO DO ITEM</span>
+                <div class="proposta-field-highlight">${escapeHtml(item)}</div>
+              </div>
+              <div class="proposta-info-list">
+                <div class="proposta-info-item">
+                  <span class="proposta-info-icon"><i class="bi bi-person"></i></span>
+                  <div>
+                    <small>RESPONSÁVEL TÉCNICO</small>
+                    <strong>${escapeHtml(responsavel)}</strong>
+                  </div>
+                </div>
+              </div>
             </div>
-          </section>
-          <section class="geral-section">
-            <h6 class="geral-section-title"><i class="bi bi-wallet2"></i> Visão Financeira</h6>
-            <div class="geral-card geral-total-card">
-              <div class="geral-card-label"><i class="bi bi-currency-dollar me-1"></i>Valor da Proposta</div>
-              <div class="geral-card-value money">${formatMoneyBR(valor)}</div>
+          </article>
+
+          <article class="proposta-panel">
+            <header class="proposta-panel-head">
+              <div class="proposta-panel-title"><i class="bi bi-clock-history"></i><span>PRAZOS &amp; DOCUMENTAÇÃO</span></div>
+            </header>
+            <div class="proposta-panel-body proposta-panel-body-stack">
+              <div class="proposta-mini-grid">
+                <div class="proposta-mini-card">
+                  <span><i class="bi bi-calendar-event"></i>ABERTURA</span>
+                  <strong>${escapeHtml(dataAbertura)}</strong>
+                </div>
+                <div class="proposta-mini-card">
+                  <span><i class="bi bi-calendar-check"></i>${escapeHtml(dataSecundariaLabel.toUpperCase())}</span>
+                  <strong>${escapeHtml(dataSecundariaValor)}</strong>
+                </div>
+              </div>
+              <div class="proposta-mini-card proposta-mini-card-single">
+                <span><i class="bi bi-receipt-cutoff"></i>NOTA FISCAL VINCULADA</span>
+                <strong>${escapeHtml(nf)}</strong>
+              </div>
             </div>
-          </section>
-        </div>
+          </article>
+        </section>
+
+        <article class="proposta-panel proposta-panel-full">
+          <header class="proposta-panel-head">
+            <div class="proposta-panel-title"><i class="bi bi-journal-text"></i><span>REGISTROS E OBSERVAÇÕES DO ERP</span></div>
+          </header>
+          <div class="proposta-panel-body">
+            <div class="proposta-note-box">
+              ${registros.join('')}
+            </div>
+          </div>
+        </article>
       </div>
     `;
 
@@ -847,11 +1016,10 @@ function setFilter(status) {
     sincronizarFiltroConcluidasNaInterface();
 
     const dadosFiltradosStatus = dadosOriginais.filter(d => {
-      if (currentStatusFilter === 'TODAS') return true;
-      return d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter;
+      return statusLinhaCorrespondeFiltro(d.content[COLS.STATUS_PROPOSTA]);
     });
 
-    const dadosPreparados = currentStatusFilter === 'CONCLUIDAS'
+    const dadosPreparados = isFiltroEntregueAtual()
       ? expandirLinhasConcluidasPorMes(dadosFiltradosStatus)
       : dadosFiltradosStatus.slice();
 
@@ -869,7 +1037,7 @@ function setFilter(status) {
 
     if (!isGeralView) {
       // CABEÇALHO DESKTOP - FIRMADAS
-      const labs = ["OBRA", "CLIENTE", "VALOR", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
+      const labs = ["OBRA", "VALOR", "CLIENTE", "ITEM", "CATEGORIA", "STATUS DO PRAZO", "STATUS DE COMPRAS", ...ITENS, "OBSERVAÇÕES"];
       head.innerHTML = "<tr>" + labs.map(l => {
         const chave = mapaOrdenacaoCabecalho[l];
         const ativo = chave && estadoOrdenacao.key === chave ? 'is-active' : '';
@@ -894,8 +1062,8 @@ function setFilter(status) {
         // LINHA DESKTOP - FIRMADAS
         html += `<tr onclick="abrirLinhaRenderizada(${renderIdx})">`;
         html += `<td>${r[COLS.OBRA] || ""}</td>`;
-        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
+        html += `<td class="td-read-left"><div class="text-truncate" style="max-width:200px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "")}</div></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.CATEGORIA_GERAL])}">${escapeHtml(r[COLS.CATEGORIA_GERAL] || "-")}</div></td>`;
         html += `<td><span class="days-badge ${res.atraso ? "days-urgent" : "days-ok"} shadow-sm">${res.texto}</span></td>`;
@@ -974,10 +1142,10 @@ function setFilter(status) {
     } else {
       // CABEÇALHO DESKTOP - GERAL
       const isFrustrada = currentStatusFilter === 'FRUSTRADAS';
-      const isConcluida = currentStatusFilter === 'CONCLUIDAS';
+      const isConcluida = isFiltroEntregueAtual();
       const labelPrimeiraColunaGeral = isConcluida ? "FATURAMENTO" : "ABERTURA";
       const indicePrimeiraDataGeral = isConcluida ? COLS.DATA_FATURAMENTO : COLS.DATA_ABERTURA;
-      const labs = [labelPrimeiraColunaGeral, "OBRA", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "VALOR", "% ORÇADO"];
+      const labs = [labelPrimeiraColunaGeral, "OBRA", "VALOR", "CLIENTE", "STATUS", "ITEM", "CATEG. / SEGMENTO", "RESPONSÁVEL", "COMPLEX.", "UF", "ETAPA", "PRAZO", "NF", "% ORÇADO"];
       if (isFrustrada) labs.push("DATA FRUSTRADA");
 
       head.innerHTML = "<tr>" + labs.map(l => {
@@ -998,9 +1166,9 @@ function setFilter(status) {
         const resCompras = calcularStatusComprasVirtual(r);
         
         let statusBadgeClass = "days-badge shadow-sm ";
-        const stProp = r[COLS.STATUS_PROPOSTA] || "";
+        const stProp = getStatusDisplay(r[COLS.STATUS_PROPOSTA]);
         if (stProp === 'FRUSTRADAS') statusBadgeClass += "days-urgent";        
-        else if (stProp === 'CONCLUIDAS' || stProp === 'ENTREGUES') statusBadgeClass += "days-ok"; 
+        else if (isStatusEntregue(stProp)) statusBadgeClass += "days-ok"; 
         else if (stProp === 'FIRMADAS') statusBadgeClass += "days-info";       
         else if (stProp === 'ENVIADAS') statusBadgeClass += "days-warning";    
         else statusBadgeClass += "bg-light text-secondary";
@@ -1009,6 +1177,7 @@ function setFilter(status) {
         html += `<tr onclick="abrirLinhaRenderizada(${renderIdx})">`;
         html += `<td>${formatDateDisplayBR(r[indicePrimeiraDataGeral]) || '-'}</td>`;
         html += `<td><strong>${escapeHtml(r[COLS.OBRA] || "")}</strong></td>`;
+        html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:180px" title="${escapeHtml(r[COLS.CLIENTE])}">${escapeHtml(r[COLS.CLIENTE] || "-")}</div></td>`;
         html += `<td><span class="${statusBadgeClass}">${stProp || "-"}</span></td>`;
         html += `<td class="td-read-left"><div class="text-truncate" style="max-width:150px" title="${escapeHtml(r[COLS.ITEM_GERAL])}">${escapeHtml(r[COLS.ITEM_GERAL] || "-")}</div></td>`;
@@ -1017,9 +1186,8 @@ function setFilter(status) {
         html += `<td>${escapeHtml(r[COLS.COMPLEXIDADE] || "-")}</td>`;
         html += `<td>${escapeHtml(r[COLS.UF] || "-")}</td>`;
         html += `<td><div class="text-truncate" style="max-width:120px" title="${escapeHtml(r[COLS.ETAPA])}">${escapeHtml(r[COLS.ETAPA] || "-")}</div></td>`;
-        html += `<td>${escapeHtml(r[COLS.DIAS_PRAZO] || "-")}</td>`;
+        html += `<td>${escapeHtml(formatPrazoDisplay(r[COLS.DIAS_PRAZO]))}</td>`;
         html += `<td>${escapeHtml(r[COLS.NF] || "-")}</td>`;
-        html += `<td class="fw-semibold td-read-left">${formatMoneyBR(val)}</td>`;
         html += `<td class="fw-bold text-primary">${pctOrcado}</td>`;
         if (isFrustrada) {
           html += `<td>${formatDateDisplayBR(r[COLS.DATA_FRUSTRADA]) || '-'}</td>`;
@@ -1076,8 +1244,10 @@ function setFilter(status) {
       if(mobileContainer) mobileContainer.innerHTML = htmlMobile;
     }
 
-    const custoMedio = dados.length > 0 ? (totVal / dados.length) : 0;
-    document.getElementById('resumoObras').innerText = dados.length;
+    const totalObrasReais = contarObrasReais(dados);
+    const divisorResumo = totalObrasReais > 0 ? totalObrasReais : dados.length;
+    const custoMedio = divisorResumo > 0 ? (totVal / divisorResumo) : 0;
+    document.getElementById('resumoObras').innerText = totalObrasReais;
     document.getElementById('resumoValor').innerText = formatMoneyBR(totVal);
     document.getElementById('resumoCustoMedio').innerText = formatMoneyBR(custoMedio);
     document.getElementById('resumoProxima').innerText = currentStatusFilter === 'FIRMADAS' ? maiorAtraso.texto : '-';
@@ -1439,41 +1609,74 @@ function setFilter(status) {
     let itemMaior = null;
     if (itensFinanceiros.length > 0) itemMaior = itensFinanceiros.reduce((a, b) => a.valor >= b.valor ? a : b);
 
+    const saldoStatusClass = saldoCpmvBruto < 0 ? 'is-alert' : 'is-ok';
+    const leituraCritica = itemMaior
+      ? `maior peso atual em <strong>${itemMaior.item}</strong>`
+      : 'nenhum item com custo lançado';
+    const leituraPercentual = itemMaior && totalUsadoCpmv > 0
+      ? `${((itemMaior.valor / totalUsadoCpmv) * 100).toFixed(1)}% da compra total`
+      : '-';
+
     let html = `
-      <div class="resumo-modal-shell">
-        <div class="finance-headline">
-          <div class="finance-headline-item"><span class="finance-headline-icon"><i class="bi bi-wallet2"></i></span><div><div class="finance-headline-label">CPMV Planejado</div><div class="finance-headline-value">${formatMoneyBR(cpmv)}</div></div></div>
-          <div class="finance-headline-item"><span class="finance-headline-icon"><i class="bi bi-graph-up-arrow"></i></span><div><div class="finance-headline-label">CPMV já utilizado</div><div class="finance-headline-value">${formatMoneyBR(totalUsadoCpmv)}</div></div></div>
-          <div class="finance-headline-item"><span class="finance-headline-icon fin-green"><i class="bi bi-pie-chart"></i></span><div><div class="finance-headline-label">Saldo disponível no CPMV</div><div class="finance-headline-value">${formatMoneyBR(saldoCpmv)}</div></div></div>
-        </div>
-        <div class="finance-progress-wrap">
-          <div class="finance-progress-top"><span><i class="bi bi-bar-chart-line me-1"></i><span class="finance-progress-main">Uso do custo planejado</span></span><span>${percCpmv.toFixed(1)}% utilizado</span></div>
-          <div class="finance-progress-bar"><div class="finance-progress-fill" style="width:${percCpmvLimitado}%"></div></div>
-        </div>
-        <div class="finance-insight-grid">
-          <div class="finance-insight-card">
-            <div class="finance-insight-card-top"><div class="finance-insight-card-label">Análise CPMV</div><div class="finance-insight-card-value">${percCpmv.toFixed(1)}% usado</div></div>
-            <div class="finance-kpi-list">
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Uso registrado</span><span class="finance-kpi-data">${formatMoneyBR(totalUsadoCpmv)}</span></div>
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Participação no CPMV</span><span class="finance-kpi-data">${percCpmv.toFixed(1)}%</span></div>
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Saldo disponível</span><span class="finance-kpi-data ${saldoCpmvBruto < 0 ? 'is-alert' : 'is-ok'}">${formatMoneyBR(saldoCpmvBruto)}</span></div>
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Saldo percentual</span><span class="finance-kpi-data ${saldoCpmvBruto < 0 ? 'is-alert' : 'is-ok'}">${percSaldoCpmv.toFixed(1)}%</span></div>
-            </div>
+      <div class="erp-page erp-finance-page">
+        <section class="erp-command-panel">
+          <div class="erp-command-copy">
+            <span class="erp-command-kicker"><i class="bi bi-wallet2"></i> Painel financeiro da obra</span>
+            <h2>Resumo de CPMV e compras</h2>
+            <p>Visão operacional do custo planejado, uso registrado, saldo disponível e participação dos itens da obra.</p>
           </div>
-          <div class="finance-insight-card">
-            <div class="finance-insight-card-top"><div class="finance-insight-card-label">Itens de compra</div><div class="finance-insight-card-value">${totalItensCompra} items</div></div>
-            <div class="finance-kpi-list">
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Base monitorada</span><span class="finance-kpi-data">${totalItensCompra} items</span></div>
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Concluídos</span><span class="finance-kpi-data is-ok">${itensOk} · ${percItensOk.toFixed(1)}%</span></div>
-              <div class="finance-kpi-row"><span class="finance-kpi-name">Pendentes</span><span class="finance-kpi-data ${itensFalta > 0 ? 'is-alert' : 'is-ok'}">${itensFalta} · ${percItensFalta.toFixed(1)}%</span></div>
-            </div>
+          <div class="erp-command-side ${saldoStatusClass}">
+            <span>Status do CPMV</span>
+            <strong>${percCpmv.toFixed(1)}%</strong>
+            <small>${formatMoneyBR(totalUsadoCpmv)} utilizado de ${formatMoneyBR(cpmv)}</small>
           </div>
-        </div>
-        <div class="finance-insight"><span><i class="bi bi-activity me-1"></i><strong>Leitura crítica:</strong> ${itemMaior ? `maior peso atual em <strong>${itemMaior.item}</strong>` : 'nenhum item com custo lançado'}</span><span>${itemMaior && totalUsadoCpmv > 0 ? `${((itemMaior.valor / totalUsadoCpmv) * 100).toFixed(1)}% da compra total` : '-'}</span></div>
-        <div class="finance-scroll-area resumo-modal-scroll">
-          <div class="finance-table-shell"><div class="table-responsive"><table class="table table-sm text-center align-middle">
-            <thead><tr><th>Item</th><th>Status</th><th>Valor</th><th>% / CPMV</th><th>% / Compra Total</th></tr></thead>
-            <tbody>
+        </section>
+
+        <section class="erp-kpi-strip">
+          <article class="erp-kpi-card">
+            <span class="erp-kpi-icon"><i class="bi bi-briefcase"></i></span>
+            <div><small>CPMV planejado</small><strong>${formatMoneyBR(cpmv)}</strong></div>
+          </article>
+          <article class="erp-kpi-card">
+            <span class="erp-kpi-icon"><i class="bi bi-graph-up-arrow"></i></span>
+            <div><small>CPMV utilizado</small><strong>${formatMoneyBR(totalUsadoCpmv)}</strong></div>
+          </article>
+          <article class="erp-kpi-card ${saldoCpmvBruto < 0 ? 'is-alert' : 'is-ok'}">
+            <span class="erp-kpi-icon"><i class="bi bi-pie-chart"></i></span>
+            <div><small>Saldo disponível</small><strong>${formatMoneyBR(saldoCpmv)}</strong></div>
+          </article>
+          <article class="erp-kpi-card">
+            <span class="erp-kpi-icon"><i class="bi bi-box-seam"></i></span>
+            <div><small>Itens monitorados</small><strong>${totalItensCompra}</strong></div>
+          </article>
+        </section>
+
+        <section class="erp-workspace-grid">
+          <main class="erp-workspace-main">
+            <article class="erp-panel erp-panel-progress">
+              <div class="erp-panel-heading">
+                <div>
+                  <span>Controle de consumo</span>
+                  <h3>Uso do custo planejado</h3>
+                </div>
+                <strong>${percCpmv.toFixed(1)}% utilizado</strong>
+              </div>
+              <div class="erp-progress-track"><div class="erp-progress-fill" style="width:${percCpmvLimitado}%"></div></div>
+              <div class="erp-progress-legend"><span>0%</span><span>50%</span><span>100%</span></div>
+            </article>
+
+            <article class="erp-panel erp-panel-table">
+              <div class="erp-panel-heading">
+                <div>
+                  <span>Detalhamento financeiro</span>
+                  <h3>Itens registrados na obra</h3>
+                </div>
+                <strong>${totalItensCompra} itens</strong>
+              </div>
+              <div class="erp-table-wrap">
+                <table class="erp-data-table">
+                  <thead><tr><th>Item</th><th>Status</th><th>Valor</th><th>% / CPMV</th><th>% / Compra total</th></tr></thead>
+                  <tbody>
     `;
 
     itensFinanceiros.forEach(reg => {
@@ -1481,37 +1684,313 @@ function setFilter(status) {
       const pCompra = totalUsadoCpmv > 0 ? ((reg.valor / totalUsadoCpmv) * 100).toFixed(1) : "0.0";
       const statusExibicao = isStatusDate(reg.status) ? formatDateDisplayBR(reg.status) : reg.status;
       const statusClass = reg.status === "OK" ? "is-ok" : (reg.status === "?" ? "is-alert" : (isStatusDate(reg.status) ? "is-date" : ""));
-      html += `<tr><td class="finance-item-name">${reg.item}</td><td><span class="finance-status-badge ${statusClass}">${statusExibicao}</span></td><td>${formatMoneyBR(reg.valor)}</td><td class="finance-percent-main">${pTotal}%</td><td class="finance-percent-sub">${pCompra}%</td></tr>`;
+      html += `<tr><td class="erp-td-strong">${reg.item}</td><td><span class="erp-status-badge ${statusClass}">${statusExibicao}</span></td><td>${formatMoneyBR(reg.valor)}</td><td class="erp-percent">${pTotal}%</td><td class="erp-percent muted">${pCompra}%</td></tr>`;
     });
 
-    if (itensFinanceiros.length === 0) html += `<tr><td colspan="5" class="finance-empty">Nenhum item financeiro registrado.</td></tr>`;
+    if (itensFinanceiros.length === 0) html += `<tr><td colspan="5" class="erp-empty-row">Nenhum item financeiro registrado.</td></tr>`;
 
-    html += `</tbody><tfoot><tr><td colspan="2">Total</td><td>${formatMoneyBR(totalUsadoCpmv)}</td><td>${percCpmv.toFixed(1)}%</td><td>${itensFinanceiros.length > 0 ? '100%' : '0%'}</td></tr></tfoot></table></div></div></div></div>`;
+    html += `</tbody><tfoot><tr><td colspan="2">Total de compras</td><td>${formatMoneyBR(totalUsadoCpmv)}</td><td>${percCpmv.toFixed(1)}%</td><td>${itensFinanceiros.length > 0 ? '100%' : '0%'}</td></tr></tfoot>
+                </table>
+              </div>
+            </article>
+          </main>
+
+          <aside class="erp-workspace-aside">
+            <article class="erp-panel erp-side-panel">
+              <div class="erp-panel-heading compact">
+                <div><span>Análise CPMV</span><h3>${percCpmv.toFixed(1)}% usado</h3></div>
+              </div>
+              <div class="erp-info-list">
+                <div><span>Uso registrado</span><strong>${formatMoneyBR(totalUsadoCpmv)}</strong></div>
+                <div><span>Participação no CPMV</span><strong>${percCpmv.toFixed(1)}%</strong></div>
+                <div><span>Saldo disponível</span><strong class="${saldoStatusClass}">${formatMoneyBR(saldoCpmvBruto)}</strong></div>
+                <div><span>Saldo percentual</span><strong class="${saldoStatusClass}">${percSaldoCpmv.toFixed(1)}%</strong></div>
+              </div>
+            </article>
+
+            <article class="erp-panel erp-side-panel">
+              <div class="erp-panel-heading compact">
+                <div><span>Itens de compra</span><h3>${totalItensCompra} itens</h3></div>
+              </div>
+              <div class="erp-info-list">
+                <div><span>Base monitorada</span><strong>${totalItensCompra} itens</strong></div>
+                <div><span>Concluídos</span><strong class="is-ok">${itensOk} · ${percItensOk.toFixed(1)}%</strong></div>
+                <div><span>Pendentes</span><strong class="${itensFalta > 0 ? 'is-alert' : 'is-ok'}">${itensFalta} · ${percItensFalta.toFixed(1)}%</strong></div>
+              </div>
+            </article>
+
+            <article class="erp-panel erp-reading-panel">
+              <span class="erp-panel-mini-title">Leitura crítica</span>
+              <p><i class="bi bi-activity"></i> <span>${leituraCritica}</span></p>
+              <strong>${leituraPercentual}</strong>
+            </article>
+          </aside>
+        </section>
+      </div>`;
 
     document.getElementById('tituloResumo').innerText = "Resumo Financeiro da Obra"; document.getElementById('corpoResumoGeral').innerHTML = html; modalResumoUI.show();
   }
-
   function abrirResumoGeral() {
     const obra = document.getElementById('obra').value.trim();
     if (!obra) { notify("Informe a obra para consultar a base geral."); return; }
-    document.getElementById('corpoResumoGeral').innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3 fw-bold text-muted">Buscando dados na base GERAL...</p></div>`; modalResumoUI.show();
+
+    const corpo = document.getElementById('corpoResumoGeral');
+    corpo.innerHTML = `<div class="erp-page-loading"><div class="spinner-border text-primary" role="status"></div><p>Buscando dados na base GERAL...</p></div>`;
+    modalResumoUI.show();
 
     callServer('getResumoGeralObra', [obra], res => {
-      if (!res || !res.encontrado) { document.getElementById('corpoResumoGeral').innerHTML = `<p class="text-center text-muted fw-bold py-5"><i class="bi bi-search d-block mb-2" style="font-size: 2rem;"></i>Obra não localizada na base.</p>`; return; }
-      const lista = Array.isArray(res.dados) ? res.dados : []; const mapa = {}; lista.forEach(d => { mapa[String(d.label || "").trim().toUpperCase()] = d.valor || "-"; });
-      
-      const total = parseMoneyFlexible(mapa["P. TOTAL"]); 
-      const recebido = parseMoneyFlexible(mapa["RECEB."]); 
-      const carteira = parseMoneyFlexible(mapa["A RECEB"] || mapa["EM CARTEIRA"]); 
-      const percentualRecebido = total > 0 ? Math.min((recebido / total) * 100, 100) : 0;
-      
-      const infoPrincipal = [ { icon: "bi-folder2-open", label: "Obra", valor: mapa["OBRA"] || obra }, { icon: "bi-building", label: "Cliente", valor: mapa["CLIENTE"] || "-" }, { icon: "bi-box-seam", label: "Item", valor: mapa["ITEM"] || "-" }, { icon: "bi-tags", label: "Categoria", valor: mapa["CATEGORIA"] || "-" } ];
-      const infoComplementar = [ { icon: "bi-calendar-event", label: "Data abertura", valor: mapa["DATA ABERTURA"] || "-" }, { icon: "bi-pen", label: "Data firmada", valor: mapa["DATA FIRMADA"] || "-" }, { icon: "bi-grid", label: "Compl.", valor: mapa["COMPL."] || "-" }, { icon: "bi-geo-alt", label: "UF", valor: mapa["UF"] || "-" } ];
-      const montarCards = (arr) => arr.map(d => `<div class="geral-card"><div class="geral-card-label"><i class="bi ${d.icon} me-1"></i>${d.label}</div><div class="geral-card-value">${d.valor}</div></div>`).join('');
+      if (!res || !res.encontrado) {
+        corpo.innerHTML = `<div class="erp-page-empty"><i class="bi bi-search"></i><strong>Obra não localizada na base.</strong><span>Confira o número informado e tente novamente.</span></div>`;
+        return;
+      }
 
-      const html = `<div class="resumo-modal-scroll"><div class="geral-shell"><section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-layout-text-window-reverse"></i> Dados principais</h6><div class="geral-grid">${montarCards(infoPrincipal)}</div></section><section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-diagram-3"></i> Informações complementares</h6><div class="geral-grid">${montarCards(infoComplementar)}</div></section><section class="geral-section"><h6 class="geral-section-title"><i class="bi bi-graph-up-arrow"></i> Visão financeira</h6><div class="geral-card geral-total-card"><div class="geral-card-label"><i class="bi bi-wallet2 me-1"></i>Valor total da obra</div><div class="geral-card-value money">${formatMoneyBR(total)}</div><div class="geral-card-sub">Base geral consolidada</div><div class="geral-progress-track"><div class="geral-progress-bar" style="width:${percentualRecebido.toFixed(1)}%"></div></div></div><div class="geral-finance-grid"><div class="geral-card"><div class="geral-card-label"><i class="bi bi-arrow-down-circle me-1"></i>Valor recebido</div><div class="geral-card-value money">${formatMoneyBR(recebido)}</div><div class="geral-card-sub">${percentualRecebido.toFixed(1)}% do total</div></div><div class="geral-card"><div class="geral-card-label"><i class="bi bi-hourglass-split me-1"></i>Valor a receber</div><div class="geral-card-value money">${formatMoneyBR(carteira)}</div><div class="geral-card-sub">${total > 0 ? Math.max(0, 100 - percentualRecebido).toFixed(1) : "0.0"}% do total</div></div></div></section></div></div>`;
-      document.getElementById('tituloResumo').innerText = "Dados da Base Geral"; document.getElementById('corpoResumoGeral').innerHTML = html;
-    }, msg => { document.getElementById('corpoResumoGeral').innerHTML = `<p class="text-center text-danger fw-bold py-5">Erro na busca: ${msg}</p>`; notify("Erro na busca: " + msg); });
+      const lista = Array.isArray(res.dados) ? res.dados : [];
+      const mapa = {};
+      lista.forEach(d => {
+        const chave = String(d.label || "").trim().toUpperCase();
+        if (chave && mapa[chave] === undefined) mapa[chave] = d.valor || "-";
+      });
+
+      const obterCampo = (...labels) => {
+        for (const label of labels) {
+          const chave = String(label || "").trim().toUpperCase();
+          const valor = mapa[chave];
+          if (valor !== null && valor !== undefined && String(valor).trim() !== "" && String(valor).trim() !== "-") return valor;
+        }
+        return "-";
+      };
+
+      const isPreenchido = value => value !== null && value !== undefined && String(value).trim() !== "" && String(value).trim() !== "-";
+      const exibirCampo = value => escapeHtml(String(value ?? "-").trim() || "-");
+      const exibirMoney = value => `R$ ${formatMoneyBR(value)}`;
+
+      const obraBase = obterCampo("OBRA") !== "-" ? obterCampo("OBRA") : obra;
+      const clienteBase = obterCampo("CLIENTE", "RAZÃO SOCIAL", "RAZAO SOCIAL");
+      const itemBase = obterCampo("ITEM", "DESCRIÇÃO", "DESCRICAO");
+      const categoriaBase = obterCampo("CATEGORIA", "CATEG.");
+      const dataAbertura = obterCampo("DATA ABERTURA", "ABERTURA");
+      const dataFirmada = obterCampo("DATA FIRMADA", "FIRMADA");
+      const dataEnviada = obterCampo("DATA ENVIADA", "ENVIADA");
+      const dataFaturamento = obterCampo("DATA FATURAMENTO", "FATURAMENTO", "DATA FATURAM");
+      const ufBase = obterCampo("UF");
+      const etapaBase = obterCampo("ETAPA", "STATUS", "SITUAÇÃO", "SITUACAO");
+      const vendedorBase = obterCampo("VENDEDOR", "RESPONSÁVEL", "RESPONSAVEL");
+      const segmentoBase = obterCampo("SEGMENTO");
+      const complexidadeBase = obterCampo("COMPLEXIDADE");
+      const complementoBase = obterCampo("COMPL.", "COMPLEMENTO", "COMPL");
+      const nfBase = obterCampo("NF", "NFE", "NOTA FISCAL", "NOTA");
+      const cpmvBase = obterCampo("CPMV");
+      const prazoBase = obterCampo("PRAZO", "PZ", "PRAZ", "DIAS PRAZO");
+
+      const total = parseMoneyFlexible(obterCampo("P. TOTAL", "VALOR TOTAL", "TOTAL", "VALOR"));
+      const recebido = parseMoneyFlexible(obterCampo("RECEB.", "RECEBIDO", "VALOR RECEBIDO"));
+      const carteira = parseMoneyFlexible(obterCampo("A RECEB", "A RECEBER", "EM CARTEIRA"));
+      const percentualRecebido = total > 0 ? Math.min((recebido / total) * 100, 100) : 0;
+
+      const statusOperacional = isPreenchido(dataFaturamento)
+        ? "Faturada"
+        : (isPreenchido(dataFirmada)
+          ? "Firmada"
+          : (isPreenchido(dataEnviada)
+            ? "Enviada"
+            : (isPreenchido(etapaBase) ? etapaBase : "Base geral")));
+
+      const statusClasse = isPreenchido(dataFaturamento)
+        ? "is-ok"
+        : (isPreenchido(dataFirmada) ? "is-primary" : (isPreenchido(dataEnviada) ? "is-warning" : "is-neutral"));
+
+      const camposPrincipais = [
+        { icon: "bi-building", label: "Cliente", valor: clienteBase, destaque: true },
+        { icon: "bi-folder2-open", label: "Obra", valor: obraBase },
+        { icon: "bi-box-seam", label: "Item", valor: itemBase },
+        { icon: "bi-tags", label: "Categoria", valor: categoriaBase },
+        { icon: "bi-person-badge", label: "Responsável", valor: vendedorBase },
+        { icon: "bi-geo-alt", label: "UF", valor: ufBase },
+        { icon: "bi-diagram-3", label: "Segmento", valor: segmentoBase },
+        { icon: "bi-sliders", label: "Complexidade", valor: complexidadeBase }
+      ];
+
+      const camposSituacao = [
+        { icon: "bi-calendar-plus", label: "Abertura", valor: dataAbertura },
+        { icon: "bi-send", label: "Enviada", valor: dataEnviada },
+        { icon: "bi-pen", label: "Firmada", valor: dataFirmada },
+        { icon: "bi-receipt-cutoff", label: "Faturamento", valor: dataFaturamento },
+        { icon: "bi-flag", label: "Etapa", valor: etapaBase },
+        { icon: "bi-receipt", label: "NF", valor: nfBase },
+        { icon: "bi-calendar2-week", label: "Prazo", valor: prazoBase },
+        { icon: "bi-grid", label: "Complemento", valor: complementoBase }
+      ];
+
+      const camposFinanceiros = [
+        { label: "Valor total", valor: exibirMoney(total), classe: "is-main" },
+        { label: "Recebido", valor: exibirMoney(recebido), classe: "is-ok" },
+        { label: "A receber", valor: exibirMoney(carteira), classe: "" },
+        { label: "CPMV", valor: exibirCampo(cpmvBase), classe: "" }
+      ];
+
+      const labelsUsados = new Set([
+        "OBRA", "CLIENTE", "RAZÃO SOCIAL", "RAZAO SOCIAL", "ITEM", "DESCRIÇÃO", "DESCRICAO", "CATEGORIA", "CATEG.",
+        "DATA ABERTURA", "ABERTURA", "DATA FIRMADA", "FIRMADA", "DATA ENVIADA", "ENVIADA", "DATA FATURAMENTO", "FATURAMENTO", "DATA FATURAM",
+        "UF", "ETAPA", "STATUS", "SITUAÇÃO", "SITUACAO", "VENDEDOR", "RESPONSÁVEL", "RESPONSAVEL", "SEGMENTO", "COMPLEXIDADE",
+        "COMPL.", "COMPLEMENTO", "COMPL", "NF", "NFE", "NOTA FISCAL", "NOTA", "CPMV", "PRAZO", "PZ", "PRAZ", "DIAS PRAZO",
+        "P. TOTAL", "VALOR TOTAL", "TOTAL", "VALOR", "RECEB.", "RECEBIDO", "VALOR RECEBIDO", "A RECEB", "A RECEBER", "EM CARTEIRA"
+      ]);
+
+      const dadosAdicionais = lista
+        .filter(d => !labelsUsados.has(String(d.label || "").trim().toUpperCase()))
+        .filter(d => isPreenchido(d.valor));
+
+      const montarCampo = d => `
+        <article class="cbase-field-card ${d.destaque ? "is-wide" : ""} ${!isPreenchido(d.valor) ? "is-empty" : ""}">
+          <span><i class="bi ${d.icon}"></i>${exibirCampo(d.label)}</span>
+          <strong>${exibirCampo(d.valor)}</strong>
+        </article>
+      `;
+
+      const montarLinhaTempo = () => camposSituacao.map(d => `
+        <div class="cbase-timeline-item ${isPreenchido(d.valor) ? "is-active" : ""}">
+          <span class="cbase-timeline-icon"><i class="bi ${d.icon}"></i></span>
+          <div>
+            <small>${exibirCampo(d.label)}</small>
+            <strong>${exibirCampo(d.valor)}</strong>
+          </div>
+        </div>
+      `).join('');
+
+      const montarDadosAdicionais = () => {
+        if (!dadosAdicionais.length) {
+          return `<div class="cbase-empty-line"><i class="bi bi-info-circle"></i><span>Nenhum campo adicional preenchido foi retornado pela base.</span></div>`;
+        }
+
+        return `
+          <div class="cbase-table-wrap">
+            <table class="cbase-table">
+              <tbody>
+                ${dadosAdicionais.map(d => `
+                  <tr>
+                    <th>${exibirCampo(d.label)}</th>
+                    <td>${exibirCampo(d.valor)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      };
+
+      const html = `
+        <div class="cbase-page">
+          <section class="cbase-hero">
+            <div class="cbase-hero-main">
+              <span class="cbase-eyebrow"><i class="bi bi-database-check"></i> Consulta da base ERP</span>
+              <h2>Obra ${exibirCampo(obraBase)}</h2>
+              <p>${exibirCampo(clienteBase)}</p>
+              <div class="cbase-chip-row">
+                <span class="cbase-status ${statusClasse}"><i class="bi bi-circle-fill"></i>${exibirCampo(statusOperacional)}</span>
+                <span><i class="bi bi-tags"></i>${exibirCampo(categoriaBase)}</span>
+                <span><i class="bi bi-geo-alt"></i>${exibirCampo(ufBase)}</span>
+              </div>
+            </div>
+
+            <aside class="cbase-hero-side">
+              <span>Valor de referência</span>
+              <strong>${exibirMoney(total)}</strong>
+              <small>${percentualRecebido.toFixed(1)}% recebido pela base</small>
+            </aside>
+          </section>
+
+          <section class="cbase-kpis">
+            <article>
+              <span><i class="bi bi-calendar-event"></i></span>
+              <div><small>Abertura</small><strong>${exibirCampo(dataAbertura)}</strong></div>
+            </article>
+            <article>
+              <span><i class="bi bi-person-badge"></i></span>
+              <div><small>Responsável</small><strong>${exibirCampo(vendedorBase)}</strong></div>
+            </article>
+            <article>
+              <span><i class="bi bi-receipt-cutoff"></i></span>
+              <div><small>NF</small><strong>${exibirCampo(nfBase)}</strong></div>
+            </article>
+            <article>
+              <span><i class="bi bi-hourglass-split"></i></span>
+              <div><small>A receber</small><strong>${exibirMoney(carteira)}</strong></div>
+            </article>
+          </section>
+
+          <section class="cbase-layout">
+            <main class="cbase-main">
+              <article class="cbase-section">
+                <header>
+                  <span>Dados da proposta</span>
+                  <h3>Ficha principal da obra</h3>
+                </header>
+                <div class="cbase-field-grid">
+                  ${camposPrincipais.map(montarCampo).join('')}
+                </div>
+              </article>
+
+              <article class="cbase-section">
+                <header>
+                  <span>Situação e datas</span>
+                  <h3>Acompanhamento do registro</h3>
+                </header>
+                <div class="cbase-field-grid">
+                  ${camposSituacao.map(montarCampo).join('')}
+                </div>
+              </article>
+
+              <article class="cbase-section">
+                <header>
+                  <span>Base ERP</span>
+                  <h3>Campos adicionais disponíveis</h3>
+                </header>
+                ${montarDadosAdicionais()}
+              </article>
+            </main>
+
+            <aside class="cbase-aside">
+              <article class="cbase-section cbase-finance">
+                <header>
+                  <span>Resumo financeiro</span>
+                  <h3>Leitura rápida</h3>
+                </header>
+                <div class="cbase-progress"><div style="width:${percentualRecebido.toFixed(1)}%"></div></div>
+                <div class="cbase-finance-list">
+                  ${camposFinanceiros.map(d => `
+                    <div>
+                      <span>${exibirCampo(d.label)}</span>
+                      <strong class="${d.classe}">${d.valor}</strong>
+                    </div>
+                  `).join('')}
+                </div>
+              </article>
+
+              <article class="cbase-section cbase-timeline">
+                <header>
+                  <span>Linha do tempo</span>
+                  <h3>Eventos da obra</h3>
+                </header>
+                ${montarLinhaTempo()}
+              </article>
+
+              <article class="cbase-section cbase-note">
+                <header>
+                  <span>Observação</span>
+                  <h3>Consulta segura</h3>
+                </header>
+                <p><i class="bi bi-shield-check"></i>Esta tela reorganiza os dados retornados pela base geral. Nenhuma regra financeira, cálculo ou consolidação foi alterada.</p>
+              </article>
+            </aside>
+          </section>
+        </div>`;
+
+      document.getElementById('tituloResumo').innerText = `Resumo da Obra - ${obraBase}`;
+      corpo.innerHTML = html;
+    }, msg => {
+      corpo.innerHTML = `<div class="erp-page-empty is-error"><i class="bi bi-exclamation-triangle"></i><strong>Erro na busca</strong><span>${msg}</span></div>`;
+      notify("Erro na busca: " + msg);
+    });
   }
 
   function deletar() { 
@@ -1534,7 +2013,7 @@ function setFilter(status) {
 
   function obterObrasAtivas() {
     const base = Array.isArray(dadosLocais) ? dadosLocais.slice(1) : [];
-    return base.filter(d => currentStatusFilter === 'TODAS' || d.content[COLS.STATUS_PROPOSTA] === currentStatusFilter);
+    return base.filter(d => statusLinhaCorrespondeFiltro(d.content[COLS.STATUS_PROPOSTA]));
   }
 
   function normalizarDataZeroHora(data) { if (!(data instanceof Date) || Number.isNaN(data.getTime())) return null; const dt = new Date(data.getTime()); dt.setHours(0, 0, 0, 0); return dt; }
