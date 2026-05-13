@@ -16,6 +16,82 @@ const OBRAS_2025_AUTORIZADAS = new Set([
   "25187"
 ]);
 
+
+// Pedidos app confirmados como duplicidade operacional da obra 26.046.
+// Esses pedidos não devem participar da consolidação nem aparecer no frontend.
+const PEDIDOS_APP_DUPLICADOS_BLOQUEADOS_POR_OBRA = Object.freeze({
+  "26046": new Set(["100218", "100243"])
+});
+
+
+const FATURAMENTO_FINANCEIRO_2026 = Object.freeze({
+  "721": { data: "08/01/2026", valor: 830929, cliente: "AQUALCULTURA FORTALE" },
+  "722": { data: "12/01/2026", valor: 10000, cliente: "TAS BOMBAS" },
+  "725": { data: "13/01/2026", valor: 5864.60, cliente: "AQUALCULTURA FORTALE" },
+  "726": { data: "26/01/2026", valor: 2861.40, cliente: "AQUISA PARAIPABA" },
+  "727": { data: "26/01/2026", valor: 5047.69, cliente: "AQUISA PARAIPABA" },
+  "728": { data: "26/01/2026", valor: 10000, cliente: "TAS BOMBAS" },
+  "729": { data: "27/01/2026", valor: 13049.30, cliente: "SAMARIA" },
+  "731": { data: "27/01/2026", valor: 70000, cliente: "HYPEMIDIA LTDA" },
+
+  "734": { data: "03/02/2026", valor: 17500, cliente: "HYPEMIDIA LTDA" },
+  "735": { data: "03/02/2026", valor: 6961.45, cliente: "SAMARIA", contabiliza: false },
+  "736": { data: "03/02/2026", valor: 1466.15, cliente: "AQUALCULTURA FORTALE" },
+  "737": { data: "03/02/2026", valor: 7572.60, cliente: "SAMARIA CAMAROES" },
+  "739": { data: "03/02/2026", valor: 520.25, cliente: "SAMARIA", contabiliza: false },
+  "741": { data: "11/02/2026", valor: 7284.39, cliente: "AQUISA BEBERIBE" },
+  "742": { data: "13/02/2026", valor: 3050.40, cliente: "AQUISA PARAIPABA" },
+  "743": { data: "13/02/2026", valor: 350.33, cliente: "CONSTRUTORA SAMARIA" },
+  "744": { data: "25/02/2026", valor: 9915.41, cliente: "CAMAR RN MARICULTURA" },
+  "746": { data: "26/02/2026", valor: 10151.44, cliente: "TECNARAO TEC" },
+  "747": { data: "27/02/2026", valor: 15629.40, cliente: "LARVIFORT" },
+  "748": { data: "27/02/2026", valor: 5240, cliente: "SAMARIA CAMAROES" },
+  "749": { data: "27/02/2026", valor: 1133.48, cliente: "NORSAL" },
+  "750": { data: "27/02/2026", valor: 3437.71, cliente: "NORSAL" },
+  "751": { data: "27/02/2026", valor: 2583.31, cliente: "NORSAL" },
+
+  "752": { data: "04/03/2026", valor: 165.20, cliente: "AQUALCULTURA FORTALE" },
+  "753": { data: "04/03/2026", valor: 176.56, cliente: "AQUALCULTURA FORTALE", contabiliza: false },
+  "754": { data: "04/03/2026", valor: 9030.45, cliente: "AQUALCULTURA FORTALE" },
+  "755": { data: "04/03/2026", valor: 4692.71, cliente: "AQUALCULTURA FORTALE" },
+  "756": { data: "04/03/2026", valor: 32886.47, cliente: "AQUALCULTURA FORTALE" },
+  "757": { data: "04/03/2026", valor: 15057.90, cliente: "AQUATEC AQUACULTURA" },
+  "758": { data: "04/03/2026", valor: 18316.80, cliente: "AQUATEC AQUACULTURA" },
+  "759": { data: "04/03/2026", valor: 269614.60, cliente: "SAMARIA CAMAROES" },
+  "760": { data: "04/03/2026", valor: 78000.90, cliente: "AQUISA PARAIPABA" },
+  "761": { data: "04/03/2026", valor: 5042.11, cliente: "NORSAL" },
+  "762": { data: "04/03/2026", valor: 4816.30, cliente: "NORSAL" },
+  "767": { data: "11/03/2026", valor: 12000.03, cliente: "AQUISA BEBERIBE" },
+  "768": { data: "18/03/2026", valor: 15500.92, cliente: "SAMARIA CAMAROES" },
+  "769": { data: "18/03/2026", valor: 12256.60, cliente: "SAMARIA CAMAROES" },
+  "770": { data: "20/03/2026", valor: 18443.30, cliente: "AQUISA PARAIPABA" },
+  "771": { data: "26/03/2026", valor: 10421.44, cliente: "VARICRED DO NORDESTE" },
+  "774": { data: "30/03/2026", valor: 3457.26, cliente: "AGROCOURA AGROPECUÁR", contabiliza: false },
+  "775": { data: "31/03/2026", valor: 61081.87, cliente: "AQUISA PARAIPABA" },
+
+  "776": { data: "01/04/2026", valor: 404421, cliente: "SAMARIA CAMAROES LTD" },
+  "777": { data: "01/04/2026", valor: 17500.15, cliente: "SAMARIA CAMAROES LTD" },
+  "778": { data: "08/04/2026", valor: 2360, cliente: "SAMARIA CAMAROES LTD", contabiliza: false },
+  "779": { data: "08/04/2026", valor: 12790, cliente: "SAMARIA CAMAROES LTD", contabiliza: false },
+  "780": { data: "10/04/2026", valor: 1501.05, cliente: "CAMAR RN MARICULTURA" },
+  "781": { data: "10/04/2026", valor: 5240, cliente: "SAMARIA CAMAROES" },
+  "785": { data: "14/04/2026", valor: 50475.33, cliente: "MUCUJO CARCINICULTUR" },
+  "786": { data: "17/04/2026", valor: 4167.90, cliente: "AFONSO FRANCA CONSTR", contabiliza: false },
+  "787": { data: "17/04/2026", valor: 1374.30, cliente: "AFONSO FRANCA CONSTR", contabiliza: false },
+  "788": { data: "23/04/2026", valor: 27000, cliente: "SAMARIA CAMAROES LTD" },
+  "789": { data: "23/04/2026", valor: 85730, cliente: "OESTE VERDE PREMOLDA" },
+  "790": { data: "24/04/2026", valor: 4109.14, cliente: "AQUISA PARAIPABA" },
+  "791": { data: "24/04/2026", valor: 3293.06, cliente: "AQUISA PARAIPABA" },
+  "792": { data: "24/04/2026", valor: 4646.25, cliente: "SANTA MARIA AQUACULT" }
+});
+
+const MESES_FINANCEIRO_FECHADOS_2026 = new Set([
+  "2026-01",
+  "2026-02",
+  "2026-03",
+  "2026-04"
+]);
+
 function getSafeId(str) {
   if (!str) return "";
   return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, '_');
@@ -88,6 +164,10 @@ function getValorFinanceiroObra(erp) {
 
   const camposFallback = [
     'p_total',
+    'pv',
+    'p_v',
+    'preco_venda',
+    'preço_venda',
     'valor_total',
     'valor',
     'total',
@@ -113,6 +193,212 @@ function pickFirstNonEmpty(...values) {
   }
   return "";
 }
+
+
+function normalizeKeyERP(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function normalizeTextERP(value) {
+  return String(value || '')
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+}
+
+function getCampoERP(erp, campos) {
+  const source = erp && typeof erp === 'object' ? erp : {};
+  const mapa = Object.keys(source).reduce((acc, key) => {
+    acc[normalizeKeyERP(key)] = key;
+    return acc;
+  }, {});
+
+  for (const campo of campos) {
+    const realKey = mapa[normalizeKeyERP(campo)];
+    if (!realKey) continue;
+
+    const valor = source[realKey];
+    if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+      return valor;
+    }
+  }
+
+  return "";
+}
+
+function getObraERP(erp) {
+  return pickFirstNonEmpty(getCampoERP(erp, [
+    'obra',
+    'numero_obra',
+    'num_obra',
+    'obra_fantasia',
+    'numero_fantasia',
+    'n_obra',
+    'cod_obra'
+  ]));
+}
+
+function getNumeroPedidoERP(erp) {
+  return pickFirstNonEmpty(getCampoERP(erp, [
+    'numero_pedido',
+    'num_pedido',
+    'pedido',
+    'numero_do_pedido',
+    'n_pedido',
+    'cod_pedido'
+  ]));
+}
+
+function getStatusPedidoERP(erp) {
+  return pickFirstNonEmpty(getCampoERP(erp, [
+    'status_pedido',
+    'status',
+    'statuspedido'
+  ]));
+}
+
+function getSituacaoPedidoERP(erp) {
+  return pickFirstNonEmpty(getCampoERP(erp, [
+    'situacao_pedido',
+    'situação_pedido',
+    'situacao',
+    'situação'
+  ]));
+}
+
+function getCondicaoPedidoERP(erp) {
+  return pickFirstNonEmpty(getCampoERP(erp, [
+    'condicao_pedido',
+    'condição_pedido',
+    'condicao',
+    'condição'
+  ]));
+}
+
+function getEtapaEfetivaERP(erp) {
+  return pickFirstNonEmpty(getCondicaoPedidoERP(erp), erp && erp.etapa);
+}
+
+function getDataFaturamentoERP(erp) {
+  return pickFirstNonEmpty(
+    erp && erp.data_faturam,
+    erp && erp.data_faturamento,
+    getCampoERP(erp, ['data_faturamento', 'data_faturam', 'dt_faturamento', 'faturamento'])
+  );
+}
+
+function getStatusPedidoNormalizadoERP(erp) {
+  return normalizeTextERP(getStatusPedidoERP(erp));
+}
+
+function getSituacaoPedidoNormalizadaERP(erp) {
+  return normalizeTextERP(getSituacaoPedidoERP(erp));
+}
+
+function hasStatusOuSituacaoPedidoERP(erp) {
+  return Boolean(getStatusPedidoNormalizadoERP(erp) || getSituacaoPedidoNormalizadaERP(erp));
+}
+
+function isPedidoCanceladoERP(erp) {
+  const statusPedido = getStatusPedidoNormalizadoERP(erp);
+  const etapaEfetiva = normalizeTextERP(getEtapaEfetivaERP(erp));
+
+  if (statusPedido === 'C' || statusPedido.includes('CANCEL')) return true;
+  if (erp && erp.data_frustrada && !hasStatusOuSituacaoPedidoERP(erp)) return true;
+  if (etapaEfetiva.includes('FRUSTR') || etapaEfetiva.includes('CANCEL')) return true;
+
+  return false;
+}
+
+function isPedidoLiquidadoERP(erp) {
+  const statusPedido = getStatusPedidoNormalizadoERP(erp);
+  return statusPedido === 'L' || statusPedido.includes('LIQUID');
+}
+
+function isPedidoAguardandoAprovacaoERP(erp) {
+  const statusPedido = getStatusPedidoNormalizadoERP(erp);
+  const situacaoPedido = getSituacaoPedidoNormalizadaERP(erp);
+  return statusPedido === 'A' && situacaoPedido === 'S';
+}
+
+function isCondicaoPropostaFirmadaERP(erp) {
+  const condicao = normalizeTextERP(getCondicaoPedidoERP(erp));
+  return condicao.includes('PROPOSTA') && condicao.includes('FIRMAD');
+}
+
+function isPedidoCarteiraERP(erp) {
+  const condicaoOriginal = String(getCondicaoPedidoERP(erp) || '').trim();
+  if (condicaoOriginal) return isCondicaoPropostaFirmadaERP(erp);
+
+  // Compatibilidade para linhas antigas sem a coluna condição.
+  return isPedidoAtendidoERP(erp);
+}
+
+function isPedidoAtendidoERP(erp) {
+  const statusPedido = getStatusPedidoNormalizadoERP(erp);
+  const situacaoPedido = getSituacaoPedidoNormalizadaERP(erp);
+
+  if (statusPedido === 'A' && situacaoPedido === 'P') return true;
+
+  if (hasStatusOuSituacaoPedidoERP(erp)) return false;
+
+  return Boolean(erp && erp.data_firmada);
+}
+
+function isCondicaoEntregueOuConcluidaERP(erp) {
+  const etapaEfetiva = normalizeTextERP(getEtapaEfetivaERP(erp));
+  return etapaEfetiva.includes('ENTREG') || etapaEfetiva.includes('CONCLU');
+}
+
+function definirStatusPropostaERP(erp, faturamentoFinanceiro) {
+  if (isPedidoCanceladoERP(erp)) return "FRUSTRADAS";
+
+  if (isPedidoLiquidadoERP(erp)) return "ENTREGUE";
+
+  if (
+    isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiro) ||
+    isCondicaoEntregueOuConcluidaERP(erp) ||
+    getDataFaturamentoERP(erp)
+  ) {
+    return "ENTREGUE";
+  }
+
+  if (isPedidoCarteiraERP(erp)) return "FIRMADAS";
+
+  if (isPedidoAguardandoAprovacaoERP(erp)) return "ENVIADAS";
+
+  return "ENVIADAS";
+}
+
+function normalizarLinhaERP(erp) {
+  const source = erp && typeof erp === 'object' ? erp : {};
+  const condicao = getCondicaoPedidoERP(source);
+
+  return Object.assign({}, source, {
+    obra: pickFirstNonEmpty(getObraERP(source), source.obra),
+    numero_pedido: getNumeroPedidoERP(source),
+    status_pedido: getStatusPedidoERP(source),
+    situacao_pedido: getSituacaoPedidoERP(source),
+    condicao_pedido: condicao,
+    etapa: pickFirstNonEmpty(condicao, source.etapa),
+    nf: pickFirstNonEmpty(source.nf, getCampoERP(source, ['nf', 'nota_fiscal', 'numero_nf', 'nfe'])),
+    cliente: pickFirstNonEmpty(source.cliente, getCampoERP(source, ['cliente', 'nome_cliente', 'razao_social'])),
+    data_faturamento: pickFirstNonEmpty(source.data_faturamento, getCampoERP(source, ['data_faturamento', 'dt_faturamento'])),
+    data_faturam: pickFirstNonEmpty(source.data_faturam, getCampoERP(source, ['data_faturam', 'data_faturamento', 'dt_faturamento'])),
+    data_firmada: pickFirstNonEmpty(source.data_firmada, getCampoERP(source, ['data_firmada', 'dt_firmada', 'data_atendida', 'dt_atendida'])),
+    data_frustrada: pickFirstNonEmpty(source.data_frustrada, getCampoERP(source, ['data_frustrada', 'dt_frustrada', 'data_cancelamento', 'dt_cancelamento'])),
+    data_enviada: pickFirstNonEmpty(source.data_enviada, getCampoERP(source, ['data_enviada', 'dt_enviada', 'data_envio', 'dt_envio'])),
+    data_abertura: pickFirstNonEmpty(source.data_abertura, getCampoERP(source, ['data_abertura', 'dt_abertura', 'data_cadastro', 'dt_cadastro'])),
+    praz: pickFirstNonEmpty(source.praz, source.pz, getCampoERP(source, ['praz', 'pz', 'prazo', 'dias_prazo'])),
+    pz: pickFirstNonEmpty(source.pz, source.praz, getCampoERP(source, ['pz', 'praz', 'prazo', 'dias_prazo']))
+  });
+}
+
 
 function buildObservacoesConsolidadas(bloco) {
   const partes = [];
@@ -140,68 +426,330 @@ function normalizeNF(value) {
   return normalizeDigits(value);
 }
 
-function extractObraPermitida(value) {
-  const txt = String(value || '').trim();
-  if (!txt) return null;
+function getFaturamentoFinanceiroPorNF(value) {
+  const nfNormalizada = normalizeNF(value);
+  if (!nfNormalizada) return null;
+  return FATURAMENTO_FINANCEIRO_2026[nfNormalizada] || null;
+}
 
-  const matches = txt.match(/\d{2}[.,-]?\d{3,}/g);
-  if (!matches) return null;
+function isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiro) {
+  return Boolean(faturamentoFinanceiro && faturamentoFinanceiro.contabiliza !== false);
+}
 
-  for (const match of matches) {
-    const digits = normalizeDigits(match);
-    if (digits.startsWith('26')) {
-      return { obraExibicao: match, obraKey: digits };
-    }
-    if (OBRAS_2025_AUTORIZADAS.has(digits)) {
-      return { obraExibicao: match, obraKey: digits };
-    }
+function isMesFinanceiroFechado2026(value) {
+  const mesReferencia = getMonthKeyFromValue(value);
+  return MESES_FINANCEIRO_FECHADOS_2026.has(mesReferencia);
+}
+
+function deveIgnorarLinhaNoFechamentoFinanceiro(erp) {
+  if (!erp) return false;
+
+  const nfNormalizada = normalizeNF(erp.nf);
+  if (!nfNormalizada) return false;
+
+  const faturamentoFinanceiro = getFaturamentoFinanceiroPorNF(nfNormalizada);
+  if (faturamentoFinanceiro) {
+    return !isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiro);
+  }
+
+  const dataFaturamentoOriginal = getDataFaturamentoERP(erp);
+  return isMesFinanceiroFechado2026(dataFaturamentoOriginal);
+}
+
+function formatObraExibicaoFromDigits(digits) {
+  const clean = normalizeDigits(digits);
+  if (clean.length >= 5) {
+    return `${clean.slice(0, 2)}.${clean.slice(2, 5)}`;
+  }
+  return clean;
+}
+
+function validarObraPermitidaPorDigits(digits) {
+  const clean = normalizeDigits(digits);
+  if (!clean || clean.length < 5) return null;
+
+  const obraKey = clean.slice(0, 5);
+  if (obraKey.startsWith('26') || OBRAS_2025_AUTORIZADAS.has(obraKey)) {
+    return {
+      obraExibicao: formatObraExibicaoFromDigits(obraKey),
+      obraKey
+    };
   }
 
   return null;
 }
 
-function isLinhaCanceladaOuFrustrada(erp) {
-  if (erp && erp.data_frustrada) return true;
+function extractObraPermitida(value) {
+  const txt = String(value || '').trim();
+  if (!txt) return null;
 
-  const etapaUp = String((erp && erp.etapa) || '').toUpperCase();
-  if (etapaUp.includes('FRUSTR')) return true;
-  if (etapaUp.includes('CANCEL')) return true;
-  return false;
+  const candidatos = [];
+
+  function addCandidato(raw) {
+    const info = validarObraPermitidaPorDigits(raw);
+    if (!info) return;
+    if (!candidatos.some(c => c.obraKey === info.obraKey)) {
+      candidatos.push(info);
+    }
+  }
+
+  let match;
+
+  // Formatos principais: 26.046, 26,046, 26-046, 26/046, OBRA26,046, OBRA 26.046.
+  const padraoComSeparador = /(?:^|[^\d])(?:OBRA\s*)?(\d{2})\s*[.,\-\/]\s*(\d{2,3})(?=$|[^\d])/gi;
+  while ((match = padraoComSeparador.exec(txt)) !== null) {
+    addCandidato(`${match[1]}${String(match[2] || '').padStart(3, '0')}`);
+  }
+
+  // Formato com espaço: OBRA 26 046 e também 26 046.
+  const padraoComEspaco = /(?:^|[^\d])(?:OBRA\s*)?(\d{2})\s+(\d{2,3})(?=$|[^\d])/gi;
+  while ((match = padraoComEspaco.exec(txt)) !== null) {
+    addCandidato(`${match[1]}${String(match[2] || '').padStart(3, '0')}`);
+  }
+
+  // Formato colado: 26046 ou OBRA26046.
+  const padraoCincoDigitos = /(?:^|[^\d])(?:OBRA\s*)?(\d{5})(?=$|[^\d])/gi;
+  while ((match = padraoCincoDigitos.exec(txt)) !== null) {
+    addCandidato(match[1]);
+  }
+
+  return candidatos[0] || null;
+}
+
+
+
+
+function extractObraPermitidaLinhaERP(erp) {
+  if (!erp || typeof erp !== 'object') return null;
+
+  const fontesPreferenciais = [
+    getObraERP(erp),
+    erp.obra,
+    erp.numero_obra,
+    erp.num_obra,
+    erp.obra_fantasia,
+    erp.numero_fantasia,
+    erp.n_obra,
+    erp.cod_obra
+  ];
+
+  for (const fonte of fontesPreferenciais) {
+    const info = extractObraPermitida(fonte);
+    if (info) return info;
+  }
+
+  const camposDeApoio = [
+    erp.item,
+    erp.descricao,
+    erp.descricao_item,
+    erp.produto,
+    erp.observacoes,
+    erp.observacao,
+    erp.obs,
+    erp.analise
+  ];
+
+  for (const fonte of camposDeApoio) {
+    const info = extractObraPermitida(fonte);
+    if (info) return info;
+  }
+
+  return null;
+}
+
+function getNumeroPedidoNumericoERP(erp) {
+  const numeroPedido = normalizeDigits(getNumeroPedidoERP(erp));
+  if (!numeroPedido) return null;
+
+  const numero = parseInt(numeroPedido, 10);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function isPedidoOrigemPCERP(erp) {
+  const numeroPedido = getNumeroPedidoNumericoERP(erp);
+  return numeroPedido !== null && numeroPedido > 0 && numeroPedido < 100000;
+}
+
+function isPedidoOrigemAppERP(erp) {
+  const numeroPedido = getNumeroPedidoNumericoERP(erp);
+  return numeroPedido !== null && numeroPedido >= 100000;
+}
+
+
+function isLinhaCanceladaOuFrustrada(erp) {
+  return isPedidoCanceladoERP(erp);
 }
 
 function isLinhaFinanceiramenteValida(erp) {
   if (!erp || isLinhaCanceladaOuFrustrada(erp)) return false;
 
+  if (deveIgnorarLinhaNoFechamentoFinanceiro(erp)) return false;
+
   const nfNormalizada = normalizeNF(erp.nf);
   const temNF = nfNormalizada !== '';
-  const temFaturamento = Boolean(erp.data_faturam || erp.data_faturamento);
+  const faturamentoFinanceiro = getFaturamentoFinanceiroPorNF(erp.nf);
+  const temFaturamento = Boolean(isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiro) || getDataFaturamentoERP(erp));
 
   return temNF && temFaturamento;
 }
 
 function getPrioridadeConsolidacaoLinha(item) {
   const erp = item && item.erp ? item.erp : {};
-  const etapaUp = String(erp.etapa || '').toUpperCase();
   const statusUp = String((item && item.statusProposta) || '').toUpperCase();
 
-  if (isLinhaFinanceiramenteValida(erp)) return 100;
-  if (isLinhaCanceladaOuFrustrada(erp)) return 10;
-  if (erp.data_firmada || statusUp === "FIRMADAS") return 80;
-  if (etapaUp.includes('ENTREGUE') || statusUp === "ENTREGUES") return 70;
-  if (erp.data_enviada || statusUp === "ENVIADAS") return 60;
+  if (isLinhaFinanceiramenteValida(erp) || isPedidoLiquidadoERP(erp) || statusUp === "ENTREGUE") return 100;
+  if (isPedidoCarteiraERP(erp) || statusUp === "FIRMADAS") return 90;
+  if (isCondicaoEntregueOuConcluidaERP(erp)) return 80;
+  if (erp.data_enviada || isPedidoAguardandoAprovacaoERP(erp) || statusUp === "ENVIADAS") return 60;
+  if (isLinhaCanceladaOuFrustrada(erp) || statusUp === "FRUSTRADAS") return 10;
   return 40;
 }
+
+function selecionarItensPorOrigemPreferencial(itens) {
+  const lista = Array.isArray(itens) ? itens : [];
+  if (!lista.length) return [];
+
+  const itensPC = lista.filter(item => isPedidoOrigemPCERP(item && item.erp));
+  if (itensPC.length) return itensPC;
+
+  const itensApp = lista.filter(item => isPedidoOrigemAppERP(item && item.erp));
+  if (itensApp.length) return itensApp;
+
+  return lista;
+}
+
+function getNumeroPedidoKeyERP(erp) {
+  return normalizeDigits(getNumeroPedidoERP(erp));
+}
+
+function isPedidoBloqueadoPorDuplicidadeConfirmada(erp, obraKey) {
+  const keyObra = normalizeDigits(obraKey);
+  const pedidosBloqueados = PEDIDOS_APP_DUPLICADOS_BLOQUEADOS_POR_OBRA[keyObra];
+  if (!pedidosBloqueados) return false;
+
+  const pedidoKey = getNumeroPedidoKeyERP(erp);
+  return Boolean(pedidoKey && pedidosBloqueados.has(pedidoKey));
+}
+
+function itemBloqueadoPorDuplicidadeConfirmada(item, obraKey) {
+  return isPedidoBloqueadoPorDuplicidadeConfirmada(item && item.erp, obraKey);
+}
+
+
+
+function grupoPossuiPedidosDuplicados(itens) {
+  const lista = Array.isArray(itens) ? itens : [];
+  const pedidos = new Set();
+
+  lista.forEach(item => {
+    const pedidoKey = getNumeroPedidoKeyERP(item && item.erp);
+    if (pedidoKey) pedidos.add(pedidoKey);
+  });
+
+  return pedidos.size > 1;
+}
+
+function filtrarPorStatusPedidoPreferencial(itens) {
+  const lista = Array.isArray(itens) ? itens : [];
+  if (!lista.length) return [];
+
+  const itensCarteira = lista.filter(item => isPedidoCarteiraERP(item && item.erp));
+  if (itensCarteira.length) return itensCarteira;
+
+  const itensLiquidados = lista.filter(item => {
+    const erp = item && item.erp;
+    const statusUp = String((item && item.statusProposta) || '').toUpperCase();
+    return isPedidoLiquidadoERP(erp) || statusUp === "ENTREGUE" || statusUp === "ENTREGUES" || statusUp === "CONCLUIDAS";
+  });
+  if (itensLiquidados.length) return itensLiquidados;
+
+  const itensAguardando = lista.filter(item => isPedidoAguardandoAprovacaoERP(item && item.erp));
+  if (itensAguardando.length) return itensAguardando;
+
+  return lista;
+}
+
+function resolverDuplicidadeGrupoObra(itens, obraKey) {
+  let lista = Array.isArray(itens) ? itens.slice() : [];
+  if (!lista.length) return [];
+
+  // Barreira cirúrgica para duplicidades operacionais já confirmadas:
+  // pedidos app bloqueados não entram em nenhuma etapa da consolidação.
+  if (obraKey) {
+    lista = lista.filter(item => !itemBloqueadoPorDuplicidadeConfirmada(item, obraKey));
+    if (!lista.length) return [];
+  }
+
+  const possuiDuplicidadeDePedidos = grupoPossuiPedidosDuplicados(lista);
+  if (!possuiDuplicidadeDePedidos) {
+    return lista;
+  }
+
+  // Em duplicidades reais, o cancelado só deve representar a obra se não houver
+  // nenhum pedido operacionalmente válido para a mesma obra. Isso evita que uma
+  // linha C contamine Carteira, Entregue, Todas, valores, itens ou observações.
+  const candidatosNaoCancelados = lista.filter(item => !isLinhaCanceladaOuFrustrada(item && item.erp));
+  if (candidatosNaoCancelados.length) {
+    lista = candidatosNaoCancelados;
+  }
+
+  return lista;
+}
+
+function getChavePedidoConsolidacao(item) {
+  const erp = item && item.erp ? item.erp : {};
+  const pedidoKey = getNumeroPedidoKeyERP(erp);
+  if (pedidoKey) return `PEDIDO:${pedidoKey}`;
+  return `LINHA:${String((item && item.sourceIndex) || '')}`;
+}
+
+function criarSubgruposConsolidacaoObra(grupo) {
+  const itens = Array.isArray(grupo && grupo.itens) ? grupo.itens : [];
+  const itensResolvidos = resolverDuplicidadeGrupoObra(itens, grupo && grupo.obraKey);
+  const subgrupos = new Map();
+
+  itensResolvidos.forEach((item, idx) => {
+    const chave = getChavePedidoConsolidacao(item) || `LINHA:${idx}`;
+    if (!subgrupos.has(chave)) {
+      subgrupos.set(chave, {
+        obraKey: grupo.obraKey,
+        obraExibicao: grupo.obraExibicao,
+        chaveConsolidacao: chave,
+        itens: []
+      });
+    }
+
+    subgrupos.get(chave).itens.push(item);
+  });
+
+  return Array.from(subgrupos.values()).filter(subgrupo => subgrupo.itens.length > 0);
+}
+
+
+
 
 function selecionarLinhasParaConsolidacao(grupo) {
   const itens = Array.isArray(grupo && grupo.itens) ? grupo.itens : [];
   if (!itens.length) return [];
 
-  const maiorPrioridade = itens.reduce((maior, item) => {
+  let candidatos = itens.slice();
+
+  const existeNaoCancelado = candidatos.some(item => !isLinhaCanceladaOuFrustrada(item && item.erp));
+  if (existeNaoCancelado) {
+    candidatos = candidatos.filter(item => !isLinhaCanceladaOuFrustrada(item && item.erp));
+  }
+
+  candidatos = filtrarPorStatusPedidoPreferencial(candidatos);
+  if (!candidatos.length) return [];
+
+  const maiorPrioridade = candidatos.reduce((maior, item) => {
     return Math.max(maior, getPrioridadeConsolidacaoLinha(item));
   }, 0);
 
-  return itens.filter(item => getPrioridadeConsolidacaoLinha(item) === maiorPrioridade);
+  return candidatos.filter(item => getPrioridadeConsolidacaoLinha(item) === maiorPrioridade);
 }
+
+
 
 
 function parseDataUniversal(value) {
@@ -232,8 +780,8 @@ function parseDataUniversal(value) {
   return null;
 }
 
-function atualizarMaiorDataFaturamento(bloco, erp) {
-  const valorOriginal = pickFirstNonEmpty(erp.data_faturam, erp.data_faturamento);
+function atualizarMaiorDataFaturamento(bloco, erp, dataFaturamentoPreferencial) {
+  const valorOriginal = pickFirstNonEmpty(dataFaturamentoPreferencial, getDataFaturamentoERP(erp));
   const dataNormalizada = parseDataUniversal(String(valorOriginal || '').trim());
   if (!dataNormalizada) return;
 
@@ -330,6 +878,9 @@ function serializarDetalhesConcluidas(bloco) {
     }));
 
   return JSON.stringify({
+    meta_obra_key: String(bloco.obraKey || ''),
+    meta_obra_exibicao: String(bloco.obraExibicao || ''),
+    meta_numero_pedidos: Array.from(bloco.pedidos || []),
     meta_concluidas_nf: detalhes,
     meta_concluidas_por_mes: detalhesPorMes
   });
@@ -363,7 +914,7 @@ function criarLinhaBase(item) {
     item.erp.nf || "", // 29: NF
     item.erp.data_frustrada || "", // 30: FRUSTRADA
     item.erp.data_enviada || "", // 31: ENVIADA
-    item.erp.data_faturam || item.erp.data_faturamento || "" // 32: FATURAMENTO
+    getDataFaturamentoERP(item.erp) // 32: FATURAMENTO
   ];
 }
 
@@ -375,6 +926,9 @@ function consolidarGrupoObra(grupo) {
 
   const bloco = {
     linha,
+    obraKey: grupo && grupo.obraKey ? grupo.obraKey : "",
+    obraExibicao: grupo && grupo.obraExibicao ? grupo.obraExibicao : (itemBase && itemBase.obraExibicao) || "",
+    pedidos: new Set(),
     valorTotal: 0,
     itens: new Set(),
     categorias: new Set(),
@@ -389,6 +943,13 @@ function consolidarGrupoObra(grupo) {
   linhasSelecionadas.forEach(item => {
     const erp = item.erp;
     const nfNormalizada = normalizeNF(erp.nf);
+    const ignorarFechamentoFinanceiro = item.ignorarFechamentoFinanceiro === true;
+    const faturamentoFinanceiroBruto = item.faturamentoFinanceiro || getFaturamentoFinanceiroPorNF(erp.nf);
+    const faturamentoFinanceiro = !ignorarFechamentoFinanceiro && isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiroBruto) ? faturamentoFinanceiroBruto : null;
+    const dataFaturamentoPreferencial = faturamentoFinanceiro ? faturamentoFinanceiro.data : "";
+    const valorDocumento = ignorarFechamentoFinanceiro
+      ? 0
+      : (faturamentoFinanceiro ? parseMoneyFlexible(faturamentoFinanceiro.valor) : parseMoneyFlexible(item.valorNF || 0));
     const chaveValor = nfNormalizada ? `NF:${nfNormalizada}` : `LINHA:${item.sourceIndex}`;
 
     if (!bloco.chavesValorContabilizadas.has(chaveValor)) {
@@ -411,13 +972,13 @@ function consolidarGrupoObra(grupo) {
     bloco.linha[29] = pickFirstNonEmpty(bloco.linha[29], erp.nf);
     bloco.linha[30] = pickFirstNonEmpty(bloco.linha[30], erp.data_frustrada);
     bloco.linha[31] = pickFirstNonEmpty(bloco.linha[31], erp.data_enviada);
-    atualizarMaiorDataFaturamento(bloco, erp);
+    atualizarMaiorDataFaturamento(bloco, erp, dataFaturamentoPreferencial);
 
-    const dataFaturamentoOriginal = pickFirstNonEmpty(erp.data_faturam, erp.data_faturamento);
+    const dataFaturamentoOriginal = pickFirstNonEmpty(dataFaturamentoPreferencial, getDataFaturamentoERP(erp));
     const dataFaturamentoIso = formatDateToISO(dataFaturamentoOriginal);
     const mesReferencia = getMonthKeyFromValue(dataFaturamentoOriginal);
 
-    if (nfNormalizada && dataFaturamentoIso && parseMoneyFlexible(item.valorNF || 0) > 0) {
+    if (nfNormalizada && dataFaturamentoIso && valorDocumento > 0) {
       if (!bloco.documentosConcluidos.has(chaveValor)) {
         bloco.documentosConcluidos.set(chaveValor, {
           chave: chaveValor,
@@ -425,14 +986,14 @@ function consolidarGrupoObra(grupo) {
           dataFaturamentoIso,
           dataFaturamentoOriginal,
           mesReferencia,
-          valor: parseMoneyFlexible(item.valorNF || 0),
+          valor: valorDocumento,
           itens: new Set(),
           categorias: new Set()
         });
       }
 
       const detalheDoc = bloco.documentosConcluidos.get(chaveValor);
-      detalheDoc.valor = Math.max(detalheDoc.valor, parseMoneyFlexible(item.valorNF || 0));
+      detalheDoc.valor = faturamentoFinanceiro ? valorDocumento : Math.max(detalheDoc.valor, valorDocumento);
       addUnique(detalheDoc.itens, erp.item);
       addUnique(detalheDoc.categorias, erp.categoria);
 
@@ -452,6 +1013,12 @@ function consolidarGrupoObra(grupo) {
     addUnique(bloco.observacoes, erp.observacao);
     addUnique(bloco.observacoes, erp.obs);
     addUnique(bloco.observacoes, erp.analise);
+    if (erp.numero_pedido) {
+      addUnique(bloco.pedidos, erp.numero_pedido);
+      addUnique(bloco.observacoes, `Pedido ERP: ${erp.numero_pedido}`);
+    }
+    if (erp.status_pedido) addUnique(bloco.observacoes, `Status pedido: ${erp.status_pedido}`);
+    if (erp.situacao_pedido) addUnique(bloco.observacoes, `Situação pedido: ${erp.situacao_pedido}`);
   });
 
   bloco.linha[3] = bloco.valorTotal;
@@ -488,32 +1055,30 @@ const motorBackend = {
 
       // 3. Varre os dados do JSON e traduz para a matriz do painel
       if (erpData && erpData.length > 0) {
-        erpData.forEach((erp, sourceIndex) => {
-          const obraInfo = extractObraPermitida(erp.obra);
+        erpData.forEach((erpOriginal, sourceIndex) => {
+          const erp = normalizarLinhaERP(erpOriginal);
+          const obraInfo = extractObraPermitidaLinhaERP(erp);
           if (!obraInfo) return;
 
+          if (isPedidoBloqueadoPorDuplicidadeConfirmada(erp, obraInfo.obraKey)) return;
+
+          const ignorarFechamentoFinanceiro = deveIgnorarLinhaNoFechamentoFinanceiro(erp);
+
+          const faturamentoFinanceiroBruto = getFaturamentoFinanceiroPorNF(erp.nf);
+          const faturamentoFinanceiro = isFaturamentoFinanceiroContabilizavel(faturamentoFinanceiroBruto) ? faturamentoFinanceiroBruto : null;
           const valorObra = getValorFinanceiroObra(erp);
-          const valorNF = getValorFinanceiroNF(erp);
-          const valorContabil = isLinhaFinanceiramenteValida(erp) && valorNF !== null
-            ? valorNF
-            : valorObra;
+          const valorNF = faturamentoFinanceiro ? parseMoneyFlexible(faturamentoFinanceiro.valor) : getValorFinanceiroNF(erp);
+          const valorContabil = ignorarFechamentoFinanceiro
+            ? 0
+            : (isLinhaFinanceiramenteValida(erp) && valorNF !== null ? valorNF : valorObra);
 
           // Lógica automática para definir o STATUS DA PROPOSTA
-          let statusProposta = "ENVIADAS";
-          const etapaUp = String(erp.etapa || '').toUpperCase();
-
-          if (erp.data_frustrada) {
-            statusProposta = "FRUSTRADAS";
-          } else if (etapaUp.includes('CONCLU') || erp.data_faturam || erp.data_faturamento) {
-            statusProposta = "CONCLUIDAS";
-          } else if (etapaUp.includes('ENTREGUE')) {
-            statusProposta = "ENTREGUES";
-          } else if (erp.data_firmada) {
-            statusProposta = "FIRMADAS";
-          }
+          const statusProposta = definirStatusPropostaERP(erp, faturamentoFinanceiro);
 
           if (!obrasProcessadas[obraInfo.obraKey]) {
             obrasProcessadas[obraInfo.obraKey] = {
+              obraKey: obraInfo.obraKey,
+              obraExibicao: obraInfo.obraExibicao,
               itens: []
             };
           }
@@ -523,13 +1088,17 @@ const motorBackend = {
             valorObra,
             valorNF,
             valorContabil,
+            faturamentoFinanceiro,
+            ignorarFechamentoFinanceiro,
             statusProposta,
             obraExibicao: obraInfo.obraExibicao,
             sourceIndex
           });
         });
 
-        const listaObras = Object.values(obrasProcessadas).map(consolidarGrupoObra);
+        const listaObras = Object.values(obrasProcessadas)
+          .flatMap(grupo => criarSubgruposConsolidacaoObra(grupo).map(consolidarGrupoObra))
+          .filter(linha => Array.isArray(linha) && linha.length > 0);
 
         // Ordenação crescente e definitiva
         listaObras.sort((a, b) => {
