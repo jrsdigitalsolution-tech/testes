@@ -354,6 +354,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .mini-status-btn.is-active-na { color: #2563eb; }
 .mini-status-btn.is-active-date { color: #f59e0b; }
 .mini-status-btn.is-active-qm { color: #dc2626; }
+
+.material-box.item-state-ok {
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.92) 0%, rgba(220, 252, 231, 0.72) 100%);
+  border-color: rgba(34, 197, 94, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 10px 24px rgba(22, 163, 74, 0.08);
+}
+.material-box.item-state-ok .material-label,
+.material-box.item-state-ok .material-toggle-icon { color: #166534; }
+.material-box.item-state-ok .material-body { border-top-color: rgba(34, 197, 94, 0.18); }
+
+.material-box.item-state-na {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.72) 0%, rgba(241, 245, 249, 0.64) 100%);
+  border-color: rgba(203, 213, 225, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.64);
+  opacity: 0.76;
+}
+.material-box.item-state-na .material-label,
+.material-box.item-state-na .material-toggle-icon { color: #64748b; }
+
+.material-box.item-state-qm {
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.94) 0%, rgba(254, 226, 226, 0.72) 100%);
+  border-color: rgba(239, 68, 68, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 10px 24px rgba(220, 38, 38, 0.08);
+}
+.material-box.item-state-qm .material-label,
+.material-box.item-state-qm .material-toggle-icon { color: #991b1b; }
+.material-box.item-state-qm .material-body { border-top-color: rgba(239, 68, 68, 0.18); }
+
+.material-box.item-state-date {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.94) 0%, rgba(254, 243, 199, 0.74) 100%);
+  border-color: rgba(245, 158, 11, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.78), 0 10px 24px rgba(217, 119, 6, 0.08);
+}
+.material-box.item-state-date .material-label,
+.material-box.item-state-date .material-toggle-icon { color: #92400e; }
+.material-box.item-state-date .material-body { border-top-color: rgba(245, 158, 11, 0.20); }
 .mini-status-btn i { font-size: 0.96rem; }
 .mini-date-btn { position: relative; overflow: hidden; min-width: 32px; }
 .mini-date-text { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 18px; white-space: nowrap; }
