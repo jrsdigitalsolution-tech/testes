@@ -892,10 +892,12 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
   }
 
   function statusPersistidoParaValorTabela(statusItem) {
-    const status = String(statusItem || '').trim().toUpperCase();
+    const statusOriginal = String(statusItem || '').trim();
+    const status = statusOriginal.toUpperCase();
     if (status === 'OK') return 'OK';
     if (status === 'PENDENTE' || status === '?' || status === 'DUVIDA' || status === 'DÚVIDA') return '?';
     if (status === 'N/A' || status === 'NA' || status === 'NAO_APLICA' || status === 'NÃO_APLICA') return 'N/A';
+    if (isStatusDate(statusOriginal)) return formatDateDisplayBR(statusOriginal);
     return '';
   }
 
@@ -945,6 +947,8 @@ const ITENS = ["BBA/ELET.", "MT", "FLUT.", "M FV.", "AD. FLEX", "AD. RIG.", "FIX
         } else if (valorStatus === '?') {
           detAtual.alerta_descricao = obsStatus || detAtual.alerta_descricao || 'Pendência registrada.';
         } else if (valorStatus === 'N/A') {
+          detAtual.descricao = obsStatus || detAtual.descricao || '';
+        } else if (isStatusDate(valorStatus)) {
           detAtual.descricao = obsStatus || detAtual.descricao || '';
         }
 
@@ -2019,15 +2023,17 @@ function setFilter(status) {
     const btnOk = document.getElementById(`btn_ok_${id}`); const btnNa = document.getElementById(`btn_na_${id}`);
     const btnQm = document.getElementById(`btn_qm_${id}`); const btnDt = document.getElementById(`btn_dt_${id}`);
     const btnEdit = document.getElementById(`btn_edit_${id}`);
+    const box = document.getElementById(`box_${id}`);
     const status = hid ? String(hid.value || '').trim() : '';
 
     [btnOk, btnNa, btnQm, btnDt].forEach(b => { if (b) b.classList.remove('is-active-ok', 'is-active-na', 'is-active-qm', 'is-active-date'); });
+    if (box) box.classList.remove('item-state-ok', 'item-state-na', 'item-state-qm', 'item-state-date');
     if (txt) txt.innerHTML = '<i class="bi bi-calendar3"></i>';
 
-    if (status === 'OK') { if (btnOk) btnOk.classList.add('is-active-ok'); } 
-    else if (status === 'N/A' || status === '') { if (btnNa) btnNa.classList.add('is-active-na'); } 
-    else if (status === '?') { if (btnQm) btnQm.classList.add('is-active-qm'); } 
-    else { if (btnDt) btnDt.classList.add('is-active-date'); if (txt) txt.textContent = status; }
+    if (status === 'OK') { if (btnOk) btnOk.classList.add('is-active-ok'); if (box) box.classList.add('item-state-ok'); } 
+    else if (status === 'N/A' || status === '') { if (btnNa) btnNa.classList.add('is-active-na'); if (box) box.classList.add('item-state-na'); } 
+    else if (status === '?') { if (btnQm) btnQm.classList.add('is-active-qm'); if (box) box.classList.add('item-state-qm'); } 
+    else { if (btnDt) btnDt.classList.add('is-active-date'); if (txt) txt.textContent = status; if (box) box.classList.add('item-state-date'); }
 
     if (btnEdit) btnEdit.style.display = (status && status !== 'N/A' && status !== '?') ? 'inline-flex' : 'none';
   }
@@ -2446,6 +2452,25 @@ function setFilter(status) {
     document.getElementById(`${id}_oc_val`).value = oc; document.getElementById(`${id}_desc_val`).value = desc;
 
     if (mode === 'OK') { setStatus(id, 'OK'); } else if (document.getElementById(`${id}_date_val`)?.value) { setStatus(id, 'DATA'); }
+
+    const statusAtual = document.getElementById(`${id}_status_hidden`)?.value || '';
+    const obra = getObraAtualFormulario();
+    const itemLabel = getItemLabelById(id);
+
+    if (statusAtual && statusAtual !== 'OK' && statusAtual !== 'N/A' && statusAtual !== '?' && obra && itemLabel && window.motorCompras && typeof window.motorCompras.salvarStatusItemObra === 'function') {
+      try {
+        await window.motorCompras.salvarStatusItemObra(obra, itemLabel, statusAtual, {
+          pednum: oc,
+          observacao: desc,
+          atualizado_por: 'interface'
+        });
+        renderizar(dadosLocais.slice(1));
+      } catch (err) {
+        notify(`<i class='bi bi-exclamation-triangle me-2'></i> ${escapeHtml(extrairMensagemErro(err))}`);
+        return;
+      }
+    }
+
     atualizarFaturamentoPrevistoFormulario(); modalCompraUI.hide();
   }
 
